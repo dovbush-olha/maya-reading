@@ -3,7 +3,7 @@ import { HINTS, PRAISE_AFTER_HINT, PRAISE_READING_ALONE, TRY_AGAIN, pick } from 
 import type { PickPictureExercise } from '../../content/types';
 import { getWord } from '../../content/words';
 import { chime } from '../../audio/audio';
-import { ColoredText, HintButton } from '../ui';
+import { ColoredText, HintButton, SayButton } from '../ui';
 import { caseText } from '../text';
 import { SyllableSplit } from './SyllableSplit';
 import type { ExerciseProps } from './types';
@@ -11,11 +11,13 @@ import type { ExerciseProps } from './types';
 /**
  * Прочитай слово і знайди картинку. Так дитина, яка грається сама,
  * показує, що справді прочитала: результат іде в журнал читання.
+ * Послухати слово можна лише після підказки чи помилки - інакше картинку шукали б на слух, не читаючи.
  */
-export function PickPicture({ exercise, readingCase, completed, onFeedback, onComplete }: ExerciseProps<PickPictureExercise>) {
+export function PickPicture({ exercise, readingCase, openHints, completed, onFeedback, onComplete }: ExerciseProps<PickPictureExercise>) {
   const word = getWord(exercise.word);
   const [tried, setTried] = useState<string[]>([]);
   const [level, setLevel] = useState(0);
+  const speak = level >= 1 && !completed;
 
   const raise = (afterMistake: boolean) => {
     const next = Math.min(2, level + 1);
@@ -40,8 +42,8 @@ export function PickPicture({ exercise, readingCase, completed, onFeedback, onCo
   return (
     <div className="exercise exercise--pick">
       <div className={`read-card ${completed ? 'read-card--revealed' : ''}`}>
-        {level >= 1 && !completed ? (
-          <SyllableSplit entry={word} readingCase={readingCase} />
+        {(level >= 1 || openHints) && !completed ? (
+          <SyllableSplit entry={word} readingCase={readingCase} speak={speak} />
         ) : (
           <ColoredText text={caseText(word.text, readingCase)} className={`reading-text reading-text--word ${word.text.length > 6 ? 'reading-text--long' : ''}`} />
         )}
@@ -76,6 +78,7 @@ export function PickPicture({ exercise, readingCase, completed, onFeedback, onCo
       </div>
 
       <div className="exercise__tools">
+        {speak && <SayButton text={word.text} />}
         <HintButton onClick={() => raise(false)} disabled={completed || level >= 2} />
       </div>
     </div>

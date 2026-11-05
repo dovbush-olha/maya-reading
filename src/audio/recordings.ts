@@ -1,13 +1,12 @@
 import { useSyncExternalStore } from 'react';
-import type { LetterId } from '../content/alphabet';
 import { tx } from './db';
+
+export { soundKey } from '../logic/voice';
 
 /**
  * Записи голосу дорослого (звуки букв) у IndexedDB на самому пристрої.
  * Коли дитина грається сама, вправа «вибери букву за звуком» відтворює мамин запис.
  */
-
-export const soundKey = (l: LetterId) => `sound:${l}`;
 
 let keys = new Set<string>();
 let listeners: Array<() => void> = [];

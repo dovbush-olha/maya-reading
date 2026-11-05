@@ -5,7 +5,7 @@ import type { BlendExercise } from '../../content/types';
 import { chime } from '../../audio/audio';
 import { hasRecording, playRecording, soundKey } from '../../audio/recordings';
 import { SoloRead } from '../SoloRead';
-import { AdultPrompt, ColoredText, ReadingMarks } from '../ui';
+import { AdultPrompt, ColoredText, ReadingMarks, SayButton } from '../ui';
 import { caseText, stretch } from '../text';
 import type { ExerciseProps } from './types';
 
@@ -77,6 +77,7 @@ export function Blend({ exercise, readingCase, solo, completed, onFeedback, onCo
       {step === 2 && (
         <div className="blend__result">
           <ColoredText text={show(syllable)} className="reading-text reading-text--syllable" />
+          <SayButton text={syllable} />
         </div>
       )}
 

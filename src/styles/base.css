@@ -376,3 +376,7 @@ p {
     transition-duration: 0.01ms !important;
   }
 }
+
+.nowrap {
+  white-space: nowrap;
+}

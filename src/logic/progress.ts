@@ -45,6 +45,8 @@ export interface Settings {
   mode: 'solo' | 'together';
   /** Коли дитина грається сама, її читання записується, щоб дорослий потім послухав і відмітив. */
   recordReading: boolean;
+  /** Склади з дужками й кнопка 🔊 видно одразу; вимкнено - лише після «Підказка». */
+  openHints: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -54,6 +56,7 @@ export const DEFAULT_SETTINGS: Settings = {
   helper: 'fox',
   mode: 'solo',
   recordReading: false,
+  openHints: true,
 };
 
 function normalizeSettings(raw: unknown): Settings {
@@ -66,6 +69,7 @@ function normalizeSettings(raw: unknown): Settings {
     helper: isHelperId(r.helper) ? r.helper : d.helper,
     mode: r.mode === 'together' || r.mode === 'solo' ? r.mode : d.mode,
     recordReading: typeof r.recordReading === 'boolean' ? r.recordReading : d.recordReading,
+    openHints: typeof r.openHints === 'boolean' ? r.openHints : d.openHints,
   };
 }
 

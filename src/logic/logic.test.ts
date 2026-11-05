@@ -6,7 +6,8 @@ import { WEEK_1_MISSIONS } from '../content/week1';
 import { adviseNextLetter, missionAvailability, recommend } from './availability';
 import { buildPracticeMission, makeRng, warmUp } from './generate';
 import { adaptForSolo, canPickPicture, closeness, preferRecordedVoice } from './solo';
-import { ALL_WORDS, getWord, isPhrase } from '../content/words';
+import { ALL_WORDS, getWord, isPhrase, syllablesOf } from '../content/words';
+import { sayKey, voiceItems } from './voice';
 import {
   applyExerciseResult,
   completeMission,
@@ -278,5 +279,46 @@ describe('записи читання для дорослого', () => {
     const on = updateSettings(createInitialState(TODAY), { recordReading: true });
     expect(normalizeState(JSON.parse(JSON.stringify(on)), TODAY).settings.recordReading).toBe(true);
     expect(normalizeState({ ...on, settings: { recordReading: 'так' } }, TODAY).settings.recordReading).toBe(false);
+  });
+});
+
+describe('голос дорослого для складів і слів', () => {
+  const letters: LetterId[] = ['А', 'О', 'У', 'И', 'І', 'Е', 'Л', 'М'];
+  const items = voiceItems(letters, WEEK_1_MISSIONS);
+
+  it('один запис на склад незалежно від регістру', () => {
+    expect(sayKey('Ма')).toBe(sayKey('ма'));
+    expect(sayKey('Мама мила')).toBe('say:мама мила');
+  });
+
+  it('склад з однієї букви - це звук букви, окремо його не записуємо', () => {
+    expect(sayKey('О')).toBe('sound:О');
+    expect(sayKey('у')).toBe('sound:У');
+    expect(items.syllables).not.toContain('о');
+  });
+
+  it('слово з одного складу - лише серед слів', () => {
+    expect(items.words).toContain('ми');
+    expect(items.syllables).not.toContain('ми');
+  });
+
+  it('містить склади з місій, склади слів і самі слова', () => {
+    expect(items.syllables).toEqual(expect.arrayContaining(['ла', 'ма', 'ал', 'ло']));
+    expect(items.words).toEqual(expect.arrayContaining(['мама', 'мама мила', 'алла']));
+  });
+
+  it('лише те, що читається доступними буквами, без повторів', () => {
+    for (const t of [...items.syllables, ...items.words]) expect(isReadableWith(t, letters), t).toBe(true);
+    expect(items.words).not.toContain('оса');
+    expect(new Set(items.syllables).size).toBe(items.syllables.length);
+  });
+
+  it('кожен склад кожного доступного слова можна записати', () => {
+    for (const w of ALL_WORDS.filter((x) => isReadableWith(x.text, letters))) {
+      for (const s of syllablesOf(w)) {
+        const key = s.toLocaleLowerCase('uk-UA');
+        if (key.length > 1) expect([...items.syllables, ...items.words], `${w.text}: ${s}`).toContain(key);
+      }
+    }
   });
 });

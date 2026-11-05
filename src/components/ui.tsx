@@ -1,5 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { LETTERS, isLetterId, toUpper } from '../content/alphabet';
+import { playRecording, useRecordingKeys } from '../audio/recordings';
+import { sayKey } from '../logic/voice';
 
 /** Текст, у якому голосні червоні, а приголосні сині - як у шкільному букварі. */
 export function ColoredText({ text, className = '' }: { text: string; className?: string }) {
@@ -74,6 +76,28 @@ export function SoloReadButton({ onDone }: { onDone: () => void }) {
 export function ListenButton({ onPlay, big = false }: { onPlay: () => void; big?: boolean }) {
   return (
     <button type="button" className={`listen-button ${big ? 'listen-button--big' : ''}`} onClick={onPlay} aria-label="Послухати">
+      <span aria-hidden="true">🔊</span>
+    </button>
+  );
+}
+
+/**
+ * «Послухай, як правильно»: голос дорослого читає склад чи слово.
+ * Без запису кнопки немає.
+ */
+export function SayButton({ text, onPlay }: { text: string; onPlay?: () => void }) {
+  const keys = useRecordingKeys();
+  if (!keys.has(sayKey(text))) return null;
+  return (
+    <button
+      type="button"
+      className="listen-button listen-button--small"
+      onClick={() => {
+        void playRecording(sayKey(text));
+        onPlay?.();
+      }}
+      aria-label="Послухати, як правильно"
+    >
       <span aria-hidden="true">🔊</span>
     </button>
   );

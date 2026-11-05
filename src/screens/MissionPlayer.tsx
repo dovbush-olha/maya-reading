@@ -27,7 +27,7 @@ const GOAL_LABEL = { learn: 'Вчимося', reinforce: 'Закріплюємо
 
 export function MissionPlayer({ mission, onExit, onRepeat }: Props) {
   const progress = useProgress();
-  const { readingCase, helper, mode } = progress.settings;
+  const { readingCase, helper, mode, openHints } = progress.settings;
   const solo = mode === 'solo';
   const [runId] = useState(() => `${mission.id}-${Date.now()}`);
 
@@ -159,6 +159,7 @@ export function MissionPlayer({ mission, onExit, onRepeat }: Props) {
             seed={`${runId}-${index}`}
             readingCase={readingCase}
             solo={solo}
+            openHints={openHints}
             completed={completed}
             onFeedback={setFeedback}
             onComplete={handleComplete}

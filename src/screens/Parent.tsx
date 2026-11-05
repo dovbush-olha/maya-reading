@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { BASE_LETTERS, LETTERS, NOT_YET_STUDIED, PLANNED_LETTERS, UKRAINIAN_ALPHABET, toLower, type LetterId } from '../content/alphabet';
+import { useMemo, useState, type ReactNode } from 'react';
+import { BASE_LETTERS, LETTERS, NOT_YET_STUDIED, PLANNED_LETTERS, UKRAINIAN_ALPHABET, toLower, toUpper, type LetterId } from '../content/alphabet';
 import { CHILD_NAME } from '../content/phrases';
 import type { Mission } from '../content/types';
 import { WEEK_1, WEEK_1_MISSIONS } from '../content/week1';
@@ -7,9 +7,10 @@ import { clearReadings, playReading, removeReading, usePendingReadings } from '.
 import { canRecord, deleteRecording, playRecording, requestMicrophone, saveRecording, soundKey, startRecording, useRecordingKeys } from '../audio/recordings';
 import { HELPERS } from '../content/helpers';
 import { Helper } from '../components/Helper';
-import { Modal } from '../components/ui';
+import { ColoredText, Modal } from '../components/ui';
 import { adviseNextLetter, missingLetters, missionAvailability } from '../logic/availability';
 import { availableSyllables } from '../logic/generate';
+import { sayKey, voiceItems } from '../logic/voice';
 import {
   LETTER_STATUS_LABEL,
   lockLetter,
@@ -518,6 +519,16 @@ function SettingsTab() {
         />
         <label className="switch-row">
           <span>
+            <b>Підказка одразу на екрані</b>
+            <small>
+              Слово вже розділене на склади з дужками (склад - на звуки), і є 🔊, щоб послухати ваш запис. Вимкніть - і все це
+              з’являтиметься лише після <span className="nowrap">«💡 Підказка»</span>.
+            </small>
+          </span>
+          <input type="checkbox" checked={settings.openHints} onChange={(e) => set({ openHints: e.target.checked })} />
+        </label>
+        <label className="switch-row">
+          <span>
             <b>Звуки натискань</b>
             <small>М’який звук на кожне натискання і дзвіночок за правильну відповідь. Звуків за помилку немає.</small>
           </span>
@@ -544,6 +555,7 @@ function SettingsTab() {
       </section>
 
       <Recordings />
+      <SayRecordings />
 
       <section className="panel">
         <button type="button" className="text-button text-button--danger" onClick={() => setConfirmReset(true)}>
@@ -653,23 +665,30 @@ function Choice<T extends string>({
   );
 }
 
-/** Дорослий записує звуки букв своїм голосом - їх чує дитина, коли грається сама. */
-function Recordings() {
-  const progress = useProgress();
-  const keys = useRecordingKeys();
-  const [recording, setRecording] = useState<{ letter: LetterId; stop: () => void } | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const letters = UKRAINIAN_ALPHABET.filter((l) => progress.unlocked.includes(l) || PLANNED_LETTERS.includes(l));
-  const done = letters.filter((l) => keys.has(soundKey(l))).length;
+interface RecItem {
+  key: string;
+  /** Що показати на плитці (буква, склад чи слово). */
+  glyph: ReactNode;
+  /** Дрібний підпис під плиткою: як вимовляти. */
+  sub?: string;
+  /** Для голосових підказок: «звук М», «склад ма». */
+  label: string;
+}
 
-  const start = async (letter: LetterId) => {
+/** Плитки «записати / послухати / видалити» для голосу дорослого. */
+function RecordGrid({ items, maxMs, wide = false }: { items: RecItem[]; maxMs: number; wide?: boolean }) {
+  const keys = useRecordingKeys();
+  const [recording, setRecording] = useState<{ key: string; stop: () => void } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const start = async (key: string) => {
     setError(null);
     try {
-      const r = await startRecording(2500);
-      setRecording({ letter, stop: r.stop });
+      const r = await startRecording(maxMs);
+      setRecording({ key, stop: r.stop });
       const blob = await r.done;
-      await saveRecording(soundKey(letter), blob);
-      void playRecording(soundKey(letter));
+      await saveRecording(key, blob);
+      void playRecording(key);
     } catch {
       setError('Не вдалося ввімкнути мікрофон. Дозвольте доступ до мікрофона в браузері.');
     } finally {
@@ -678,42 +697,32 @@ function Recordings() {
   };
 
   return (
-    <section className="panel">
-      <h2 className="panel__title">Ваш голос для звуків</h2>
-      <p className="panel__hint">
-        Коли {CHILD_NAME} грається сама, вона чує звук букви вашим голосом. Натисніть 🎙️, скажіть сам звук (не назву букви):
-        протяжне «м-м-м», коротке «к!». Запис зупиниться сам за 2 секунди. Записано: {done} з {letters.length}.
-      </p>
-      {!canRecord() && (
-        <p className="warning">
-          Запис доступний, коли застосунок відкрито через захищене з’єднання (https) або на цьому комп’ютері (localhost).
-        </p>
-      )}
+    <>
       {error && <p className="warning">{error}</p>}
-      <div className="rec-grid">
-        {letters.map((l) => {
-          const has = keys.has(soundKey(l));
-          const isRec = recording?.letter === l;
+      <div className={`rec-grid ${wide ? 'rec-grid--wide' : ''}`}>
+        {items.map(({ key, glyph, sub, label }) => {
+          const has = keys.has(key);
+          const isRec = recording?.key === key;
           return (
-            <div key={l} className={`rec-tile ${has ? 'rec-tile--has' : ''} ${isRec ? 'rec-tile--recording' : ''}`}>
-              <span className={`rec-tile__glyph colored__ch--${LETTERS[l].kind}`}>{l}</span>
-              <span className="rec-tile__sound">{LETTERS[l].sound}</span>
+            <div key={key} className={`rec-tile ${has ? 'rec-tile--has' : ''} ${isRec ? 'rec-tile--recording' : ''}`}>
+              <span className="rec-tile__glyph">{glyph}</span>
+              {sub && <span className="rec-tile__sound">{sub}</span>}
               <span className="rec-tile__actions">
                 {isRec ? (
                   <button type="button" className="chip chip--rec" onClick={() => recording.stop()}>
                     ⏹ Стоп
                   </button>
                 ) : (
-                  <button type="button" className="chip" disabled={!canRecord() || Boolean(recording)} onClick={() => void start(l)} aria-label={`Записати звук ${l}`}>
+                  <button type="button" className="chip" disabled={!canRecord() || Boolean(recording)} onClick={() => void start(key)} aria-label={`Записати ${label}`}>
                     🎙️
                   </button>
                 )}
                 {has && !isRec && (
                   <>
-                    <button type="button" className="chip" onClick={() => void playRecording(soundKey(l))} aria-label={`Послухати звук ${l}`}>
+                    <button type="button" className="chip" onClick={() => void playRecording(key)} aria-label={`Послухати ${label}`}>
                       ▶
                     </button>
-                    <button type="button" className="chip" onClick={() => void deleteRecording(soundKey(l))} aria-label={`Видалити запис ${l}`}>
+                    <button type="button" className="chip" onClick={() => void deleteRecording(key)} aria-label={`Видалити запис ${label}`}>
                       🗑
                     </button>
                   </>
@@ -723,6 +732,76 @@ function Recordings() {
           );
         })}
       </div>
+    </>
+  );
+}
+
+const HTTPS_WARNING = 'Запис доступний, коли застосунок відкрито через захищене з’єднання (https) або на цьому комп’ютері (localhost).';
+
+/** Букви, для яких дорослий записує голос: відкриті й ті, що чекають у плані. */
+function voiceLetters(unlocked: readonly LetterId[]): LetterId[] {
+  return UKRAINIAN_ALPHABET.filter((l) => unlocked.includes(l) || PLANNED_LETTERS.includes(l));
+}
+
+/** Дорослий записує звуки букв своїм голосом - їх чує дитина, коли грається сама. */
+function Recordings() {
+  const progress = useProgress();
+  const keys = useRecordingKeys();
+  const letters = voiceLetters(progress.unlocked);
+  const done = letters.filter((l) => keys.has(soundKey(l))).length;
+  const items = letters.map<RecItem>((l) => ({
+    key: soundKey(l),
+    glyph: <span className={`colored__ch--${LETTERS[l].kind}`}>{l}</span>,
+    sub: LETTERS[l].sound,
+    label: `звук ${LETTERS[l].sound}`,
+  }));
+
+  return (
+    <section className="panel">
+      <h2 className="panel__title">Ваш голос для звуків</h2>
+      <p className="panel__hint">
+        Коли {CHILD_NAME} грається сама, вона чує звук букви вашим голосом. Натисніть 🎙️, скажіть сам звук (не назву букви):
+        протяжне «м-м-м», коротке «к!». Запис зупиниться сам за 2 секунди. Записано: {done} з {letters.length}.
+      </p>
+      {!canRecord() && <p className="warning">{HTTPS_WARNING}</p>}
+      <RecordGrid items={items} maxMs={2500} />
+    </section>
+  );
+}
+
+/** Дорослий читає склади й слова - дитина слухає, як правильно, коли просить підказку. */
+function SayRecordings() {
+  const progress = useProgress();
+  const keys = useRecordingKeys();
+  const { syllables, words } = useMemo(() => voiceItems(voiceLetters(progress.unlocked), WEEK_1_MISSIONS), [progress.unlocked]);
+  const count = (list: string[]) => list.filter((t) => keys.has(sayKey(t))).length;
+  const tiles = (list: string[], what: string) =>
+    list.map<RecItem>((t) => ({
+      key: sayKey(t),
+      glyph: <ColoredText text={toUpper(t)} />,
+      label: `${what} ${t}`,
+    }));
+
+  return (
+    <section className="panel">
+      <h2 className="panel__title">Ваш голос для складів і слів</h2>
+      <p className="panel__hint">
+        Під словом у вправі з’явиться 🔊, а склади можна буде торкнути - {CHILD_NAME} почує, як правильно, вашим голосом. Читайте
+        чітко й не поспішаючи; склади в слові - злито, без пауз. Запис зупиниться сам за 4 секунди або кнопкою «Стоп».
+      </p>
+      {!canRecord() && <p className="warning">{HTTPS_WARNING}</p>}
+      <details className="rec-group">
+        <summary>
+          Склади · записано {count(syllables)} з {syllables.length}
+        </summary>
+        <RecordGrid items={tiles(syllables, 'склад')} maxMs={4000} />
+      </details>
+      <details className="rec-group">
+        <summary>
+          Слова й фрази · записано {count(words)} з {words.length}
+        </summary>
+        <RecordGrid items={tiles(words, 'слово')} maxMs={4000} wide />
+      </details>
     </section>
   );
 }
