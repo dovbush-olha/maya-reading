@@ -1,0 +1,678 @@
+/* ================= Ігрові елементи: зірочки, друзі, картинки, записи ================= */
+
+.home__controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.icon-button--off {
+  opacity: 0.45;
+  filter: grayscale(0.6);
+}
+
+.hero__helper-button {
+  border: none;
+  background: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+}
+
+.hero__helper-button:active .helper {
+  transform: scale(0.95);
+}
+
+.hero__change {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--ink-soft);
+  background: rgba(255, 253, 248, 0.92);
+  padding: 4px 12px;
+  border-radius: 999px;
+  box-shadow: 0 4px 10px -6px rgba(62, 51, 80, 0.4);
+}
+
+.hero__card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+/* ---------- Баночка зірочок ---------- */
+
+.star-jar {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: var(--sun-pale);
+  border: 2px solid #f3dc9b;
+  font-weight: 900;
+  font-size: 1.15rem;
+  color: #8a6512;
+}
+
+.star-jar__count {
+  display: inline-block;
+  min-width: 1.2em;
+  text-align: center;
+  animation: pop-in 0.45s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
+.flying-star {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  font-size: 3.4rem;
+  line-height: 1;
+  pointer-events: none;
+  z-index: 6;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+}
+
+.flying-star--go {
+  animation: fly-star 1.1s cubic-bezier(0.55, 0, 0.3, 1) 0.15s forwards;
+}
+
+@keyframes fly-star {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.3) rotate(0);
+  }
+  25% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.5) rotate(40deg);
+  }
+  90% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.4) rotate(220deg);
+  }
+}
+
+/* ---------- Вибір друга ---------- */
+
+.helper-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 108px), 1fr));
+  gap: 12px;
+}
+
+.helper-picker__item {
+  border: 3px solid #f1e5d4;
+  border-radius: 20px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px 12px;
+  font-weight: 800;
+  color: var(--ink);
+  transition: transform 0.12s;
+}
+
+.helper-picker__item:active {
+  transform: scale(0.96);
+}
+
+.helper-picker__item--active {
+  border-color: var(--fox);
+  background: var(--fox-pale);
+}
+
+.helper-picker--inline {
+  width: 100%;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 92px), 1fr));
+}
+
+/* ---------- Картинки ---------- */
+
+.picture-prompt {
+  width: clamp(104px, 26vw, 150px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  box-shadow: 0 10px 24px -14px rgba(62, 51, 80, 0.5), inset 0 0 0 4px var(--sun-pale);
+  font-size: clamp(3.4rem, 9vw, 5rem);
+  animation: reveal 0.6s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
+.picture-row {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: clamp(10px, 3vw, 26px);
+}
+
+.picture-tile {
+  width: clamp(92px, 25vw, 160px);
+  aspect-ratio: 1;
+  border-radius: var(--radius-md);
+  border: 3px solid #f1e5d4;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  font-size: clamp(3rem, 10vw, 5rem);
+  line-height: 1;
+  box-shadow: var(--shadow-tile);
+  transition: transform 0.15s, opacity 0.3s, border-color 0.2s;
+}
+
+.picture-tile:not(:disabled):active {
+  transform: translateY(4px);
+  box-shadow: var(--shadow-tile-pressed);
+}
+
+.picture-tile--tried {
+  animation: wiggle 0.45s ease;
+  opacity: 0.35;
+}
+
+.picture-tile--dim,
+.picture-tile--rest {
+  opacity: 0.3;
+}
+
+.picture-tile--glow {
+  border-color: var(--sun);
+  animation: glow 1.4s ease-in-out infinite;
+}
+
+.picture-tile--correct {
+  border-color: var(--leaf);
+  background: var(--leaf-pale);
+  animation: correct 0.5s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
+/* ---------- Сама: «Прочитала!» і «Послухай» ---------- */
+
+.solo-read {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 76px;
+  padding: 0 38px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #8cc97f, var(--leaf));
+  color: #fff;
+  font-size: clamp(1.4rem, 4vw, 1.7rem);
+  font-weight: 900;
+  box-shadow: 0 6px 0 var(--leaf-dark), 0 14px 24px -12px var(--leaf-dark);
+  text-shadow: 0 1px 0 rgba(40, 90, 40, 0.4);
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+
+.solo-read:active {
+  transform: translateY(5px);
+  box-shadow: 0 1px 0 var(--leaf-dark);
+}
+
+.solo-read__star {
+  font-size: 1.8rem;
+  animation: star-wobble 2.4s ease-in-out infinite;
+}
+
+@keyframes star-wobble {
+  50% {
+    transform: rotate(18deg) scale(1.12);
+  }
+}
+
+.listen-button {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  border: none;
+  background: var(--leaf-pale);
+  font-size: 2.4rem;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 5px 0 #cfe6c5, 0 12px 20px -12px rgba(79, 138, 75, 0.7);
+  transition: transform 0.12s;
+}
+
+.listen-button:active {
+  transform: translateY(4px);
+}
+
+.listen-button--big {
+  width: 108px;
+  height: 108px;
+  font-size: 3rem;
+  animation: listen-pulse 2s ease-in-out infinite;
+}
+
+@keyframes listen-pulse {
+  50% {
+    box-shadow: 0 5px 0 #cfe6c5, 0 0 0 14px rgba(111, 174, 106, 0.18);
+  }
+}
+
+.intro-card__picture {
+  position: absolute;
+  top: -16px;
+  right: -16px;
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 2.3rem;
+  background: #fff;
+  box-shadow: 0 8px 18px -10px rgba(62, 51, 80, 0.5);
+}
+
+/* ---------- Склади фраз ---------- */
+
+.syllable-split {
+  flex-wrap: wrap;
+  justify-content: center;
+  row-gap: 16px;
+}
+
+.syllable-split__word {
+  display: flex;
+  gap: clamp(6px, 1.4vw, 14px);
+}
+
+.reading-text--split {
+  font-size: clamp(2.4rem, 8vw, 4.8rem);
+}
+
+.reading-text--long {
+  font-size: clamp(2.4rem, 8.5vw, 4.6rem);
+}
+
+.read-card {
+  text-align: center;
+}
+
+/* ---------- Записи голосу ---------- */
+
+.rec-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr));
+  gap: 10px;
+}
+
+.rec-tile {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas: 'glyph sound' 'actions actions';
+  align-items: center;
+  gap: 6px 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 2px solid #f1e5d4;
+  background: #fff;
+}
+
+.rec-tile--has {
+  border-color: #cfe6c5;
+}
+
+.rec-tile--recording {
+  border-color: #f5a3a3;
+  animation: glow 1.2s ease-in-out infinite;
+}
+
+.rec-tile__glyph {
+  grid-area: glyph;
+  font-size: 2rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.rec-tile__sound {
+  grid-area: sound;
+  color: var(--ink-soft);
+  font-weight: 800;
+}
+
+.rec-tile__actions {
+  grid-area: actions;
+  display: flex;
+  gap: 6px;
+}
+
+.chip:disabled {
+  opacity: 0.4;
+}
+
+.chip--rec {
+  border-color: #f5a3a3;
+  background: #fdeaea;
+  color: #b3403b;
+}
+
+.switch-row--column {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* ================= Ніч ================= */
+
+:root[data-theme='night'] .logo__small {
+  color: #bfe3b0;
+}
+
+:root[data-theme='night'] .logo__big {
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.25), 0 0 22px rgba(255, 162, 100, 0.45);
+}
+
+:root[data-theme='night'] .map,
+:root[data-theme='night'] .album {
+  background: rgba(255, 253, 248, 0.93);
+}
+
+:root[data-theme='night'] .parent__title,
+:root[data-theme='night'] .text-button--back {
+  color: #f3ecff;
+}
+
+:root[data-theme='night'] .icon-button,
+:root[data-theme='night'] .hold-button {
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.25);
+}
+
+/* ================= Телефон ================= */
+
+@media (max-width: 560px) {
+  .screen {
+    padding: 12px 12px 24px;
+    gap: 12px;
+  }
+
+  .page {
+    padding: 18px 14px;
+    border-radius: 26px;
+  }
+
+  .page::before {
+    inset: 7px;
+    border-radius: 20px;
+  }
+
+  .logo__big {
+    font-size: 2.2rem;
+  }
+
+  .logo__small {
+    font-size: 1rem;
+  }
+
+  .home__controls {
+    gap: 8px;
+  }
+
+  .icon-button {
+    width: 46px;
+    height: 46px;
+    font-size: 1.35rem;
+  }
+
+  .hold-button {
+    width: 46px;
+    height: 46px;
+    padding: 0;
+    justify-content: center;
+    font-size: 1.2rem;
+  }
+
+  .hold-button__label {
+    display: none;
+  }
+
+  .hero__helper {
+    align-items: center;
+  }
+
+  .bubble--hero {
+    margin-bottom: 40px;
+    font-size: 1.05rem;
+  }
+
+  .hero__card {
+    padding: 18px;
+    gap: 12px;
+  }
+
+  .hero__title {
+    font-size: 1.7rem;
+  }
+
+  .map-day__stone {
+    width: 64px;
+    height: 64px;
+  }
+
+  .map-day__badge {
+    font-size: 1.5rem;
+  }
+
+  .map-mission {
+    width: 42px;
+    height: 42px;
+  }
+
+  .map__days {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    column-gap: 4px;
+  }
+
+  .map-day:nth-child(even) {
+    transform: none;
+  }
+
+  .topbar {
+    gap: 8px;
+  }
+
+  .topbar__middle {
+    min-width: 0;
+  }
+
+  .trail {
+    padding: 8px 10px;
+    gap: 4px;
+    max-width: 100%;
+  }
+
+  .trail__step {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 8px;
+    max-width: 18px;
+    height: 16px;
+  }
+
+  .star-jar {
+    min-height: 40px;
+    padding: 0 10px;
+    font-size: 1rem;
+  }
+
+  .player__helper {
+    gap: 6px;
+  }
+
+  .player__helper .helper {
+    width: 66px;
+    height: 73px;
+  }
+
+  .player__helper .bubble {
+    font-size: 1rem;
+    padding: 10px 14px;
+    border-radius: 18px;
+  }
+
+  .player__footer {
+    min-height: 72px;
+  }
+
+  .player__footer .big-button {
+    min-height: 64px;
+    width: 100%;
+  }
+
+  .exercise {
+    gap: 14px;
+  }
+
+  .letter-glyph {
+    font-size: clamp(3.4rem, 15vw, 4.6rem);
+  }
+
+  .letter-glyph--hero {
+    font-size: 7rem;
+  }
+
+  .letter-glyph--hero-lower {
+    font-size: 4.8rem;
+  }
+
+  .choice-row {
+    gap: 10px;
+  }
+
+  .choice-tile {
+    width: clamp(84px, 27vw, 120px);
+  }
+
+  .blend__tile {
+    width: clamp(92px, 30vw, 124px);
+  }
+
+  .blend__bridge {
+    width: 44px;
+  }
+
+  .reading-text--syllable {
+    font-size: clamp(4rem, 20vw, 5.4rem);
+  }
+
+  .reading-text--word {
+    font-size: clamp(2.8rem, 13vw, 4.2rem);
+  }
+
+  .reading-text--long {
+    font-size: clamp(2.2rem, 10vw, 3.2rem);
+  }
+
+  .reading-text--tile,
+  .reading-text--card {
+    font-size: clamp(1.9rem, 9vw, 2.6rem);
+  }
+
+  .read-card {
+    min-height: 0;
+    min-width: 0;
+    width: 100%;
+    padding: 16px 12px;
+    gap: 14px;
+    border-radius: 26px;
+  }
+
+  .syllable-tile {
+    min-width: clamp(80px, 25vw, 110px);
+    height: 80px;
+    padding: 0 10px;
+  }
+
+  .tile-pool {
+    gap: 10px;
+  }
+
+  .word-slot {
+    width: clamp(78px, 24vw, 100px);
+    height: 76px;
+  }
+
+  .word-slots {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .match-grid {
+    gap: 10px;
+  }
+
+  .match-card {
+    height: 76px;
+  }
+
+  .mark,
+  .solo-read {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .reading-marks__buttons {
+    width: 100%;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .adult-prompt {
+    font-size: 0.92rem;
+    padding: 10px 12px;
+  }
+
+  .sample-card {
+    padding: 8px 26px 12px;
+  }
+
+  .intro-card {
+    padding: 18px 30px;
+  }
+
+  .word-reveal {
+    width: 96px;
+  }
+
+  .word-reveal__picture {
+    font-size: 3.2rem;
+  }
+
+  .mission-intro__title,
+  .mission-done__title {
+    font-size: 1.9rem;
+  }
+
+  .big-button {
+    padding: 0 28px;
+  }
+
+  .switch-row--choice {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .switch-row--choice .segmented--compact .segmented__item {
+    padding: 10px 8px;
+    font-size: 1rem;
+  }
+
+  .mission-done__page .big-button,
+  .mission-intro__page .big-button {
+    width: 100%;
+  }
+}

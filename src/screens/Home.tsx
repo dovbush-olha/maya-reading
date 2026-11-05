@@ -1,0 +1,206 @@
+import { useState } from 'react';
+import { HELPERS, helperName } from '../content/helpers';
+import { CHILD_NAME, GREETINGS, pick } from '../content/phrases';
+import type { Mission } from '../content/types';
+import { WEEK_1 } from '../content/week1';
+import { Helper } from '../components/Helper';
+import { ParentGate } from '../components/ParentGate';
+import { ColoredText, Modal } from '../components/ui';
+import { missingLetters, missionAvailability, recommend } from '../logic/availability';
+import { updateSettings } from '../logic/progress';
+import { updateProgress, useProgress } from '../store/progressStore';
+import { StarJar } from './MissionPlayer';
+
+interface Props {
+  onStart: (mission: Mission | 'practice') => void;
+  onParent: () => void;
+}
+
+const STATUS_ICON = { done: '⭐', available: '🌱', locked: '🔒', 'needs-letters': '🔒' } as const;
+
+export function Home({ onStart, onParent }: Props) {
+  const progress = useProgress();
+  const { settings } = progress;
+  const rec = recommend(progress);
+  const [greeting] = useState(() => pick(GREETINGS));
+  const [message, setMessage] = useState<string | null>(null);
+  const [picker, setPicker] = useState(false);
+  const [gate, setGate] = useState(false);
+  const recommendedId = rec.kind === 'mission' ? rec.mission.id : undefined;
+
+  const tapMission = (m: Mission) => {
+    const av = missionAvailability(progress, m);
+    if (av === 'done' || av === 'available') return onStart(m);
+    if (av === 'locked') return setMessage('Ця стежка ще попереду. Спершу пройдемо попередню місію!');
+    setMessage('Тут живе нова буква. Її відкриє дорослий, коли прийде час.');
+  };
+
+  return (
+    <div className="screen home">
+      <header className="home__header">
+        <h1 className="logo">
+          <span className="logo__small">Пригоди</span>
+          <span className="logo__big">Майї</span>
+        </h1>
+        <div className="home__controls">
+          <button
+            type="button"
+            className="icon-button"
+            onClick={() => updateProgress((s) => updateSettings(s, { theme: settings.theme === 'day' ? 'night' : 'day' }))}
+            aria-label={settings.theme === 'day' ? 'Увімкнути ніч' : 'Увімкнути день'}
+          >
+            {settings.theme === 'day' ? '🌙' : '☀️'}
+          </button>
+          <button
+            type="button"
+            className={`icon-button ${settings.music ? '' : 'icon-button--off'}`}
+            onClick={() => updateProgress((s) => updateSettings(s, { music: !settings.music }))}
+            aria-label={settings.music ? 'Вимкнути музику' : 'Увімкнути музику'}
+            aria-pressed={settings.music}
+          >
+            🎵
+          </button>
+          <button type="button" className="hold-button" onClick={() => setGate(true)} aria-label="Для дорослих">
+            <span aria-hidden="true">🔑</span>
+            <span className="hold-button__label">Для дорослих</span>
+          </button>
+        </div>
+      </header>
+
+      <section className="hero">
+        <div className="hero__helper">
+          <button type="button" className="hero__helper-button" onClick={() => setPicker(true)} aria-label="Обрати друга">
+            <Helper id={settings.helper} mood={message ? 'thinking' : 'happy'} size={180} />
+            <span className="hero__change">🔄 Обрати друга</span>
+          </button>
+          <p className="bubble bubble--hero" aria-live="polite">
+            {message ?? greeting}
+          </p>
+        </div>
+
+        <div className="hero__card">
+          <div className="hero__card-top">
+            {rec.kind === 'mission' ? (
+              <span className="pill">
+                День {rec.mission.day} · Місія {rec.mission.order}
+              </span>
+            ) : (
+              <span className="pill">Лісова гра</span>
+            )}
+            <StarJar stars={progress.stars} />
+          </div>
+          {rec.kind === 'mission' ? (
+            <>
+              <h2 className="hero__title">{rec.mission.title}</h2>
+              {rec.reason === 'repeat' && <p className="hero__note">Пограймо ще раз - так букви запам’ятовуються найкраще!</p>}
+              <button type="button" className="big-button big-button--hero" onClick={() => onStart(rec.mission)}>
+                {rec.reason === 'repeat' ? 'Ще раз!' : 'Вперед!'} <span aria-hidden="true">🐾</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <h2 className="hero__title">Повторення в лісі</h2>
+              <p className="hero__note">
+                {rec.reason === 'week-done' ? 'Тиждень пройдено! Граймо, щоб букви не забувалися.' : 'Пограймо з буквами, які вже знаємо!'}
+              </p>
+              <button type="button" className="big-button big-button--hero" onClick={() => onStart('practice')}>
+                Грати <span aria-hidden="true">🍄</span>
+              </button>
+              {rec.reason === 'needs-letters' && (
+                <p className="hero__adult">
+                  Для дорослого: наступна місія «{rec.waitingMission.title}» чекає букву {rec.letters.join(', ')}. Відкрийте її в режимі
+                  «Для дорослих», коли {CHILD_NAME} буде готова.
+                </p>
+              )}
+            </>
+          )}
+        </div>
+      </section>
+
+      <section className="map" aria-label="Лісова мапа">
+        <h2 className="section-title">Лісова мапа</h2>
+        <ol className="map__days">
+          {WEEK_1.map((day) => {
+            const states = day.missions.map((m) => missionAvailability(progress, m));
+            const dayDone = states.every((s) => s === 'done');
+            const waiting = missingLetters(progress, day.missions[0]);
+            return (
+              <li key={day.day} className={`map-day ${dayDone ? 'map-day--done' : ''}`}>
+                <span className="map-day__stone">
+                  <span className="map-day__badge">
+                    <ColoredText text={day.badge} />
+                  </span>
+                  {dayDone && (
+                    <span className="map-day__star" aria-hidden="true">
+                      ⭐
+                    </span>
+                  )}
+                </span>
+                <span className="map-day__label">День {day.day}</span>
+                <span className="map-day__missions">
+                  {day.missions.map((m, i) => {
+                    const st = states[i];
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        className={`map-mission map-mission--${st} ${m.id === recommendedId ? 'map-mission--current' : ''}`}
+                        onClick={() => tapMission(m)}
+                        aria-label={`День ${day.day}, місія ${m.order}: ${m.title}`}
+                        title={m.title}
+                      >
+                        <span aria-hidden="true">{STATUS_ICON[st]}</span>
+                      </button>
+                    );
+                  })}
+                </span>
+                {waiting.length > 0 && <span className="map-day__waiting">чекає {waiting.join(', ')}</span>}
+              </li>
+            );
+          })}
+        </ol>
+      </section>
+
+      <section className="album" aria-label="Мої лісові друзі">
+        <h2 className="section-title">Мої лісові друзі</h2>
+        {progress.stickers.length ? (
+          <ul className="album__list">
+            {progress.stickers.map((s) => (
+              <li key={s}>
+                <button type="button" className="album__sticker" aria-label="Наліпка">
+                  {s}
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="album__empty">Пройди першу місію - і тут з’явиться перший друг!</p>
+        )}
+      </section>
+
+      {gate && <ParentGate onPass={onParent} onClose={() => setGate(false)} />}
+
+      {picker && (
+        <Modal title="Хто піде з тобою в ліс?" onClose={() => setPicker(false)} actions={null}>
+          <div className="helper-picker">
+            {HELPERS.map((h) => (
+              <button
+                key={h.id}
+                type="button"
+                className={`helper-picker__item ${settings.helper === h.id ? 'helper-picker__item--active' : ''}`}
+                onClick={() => {
+                  updateProgress((s) => updateSettings(s, { helper: h.id }));
+                  setPicker(false);
+                  setMessage(`Привіт! Я ${helperName(h.id).toLocaleLowerCase('uk-UA')}. Ходімо разом!`);
+                }}
+              >
+                <Helper id={h.id} mood={settings.helper === h.id ? 'happy' : 'idle'} size={96} />
+                <span>{h.name}</span>
+              </button>
+            ))}
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}

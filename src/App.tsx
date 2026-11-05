@@ -1,0 +1,90 @@
+import { useCallback, useEffect, useState } from 'react';
+import type { Mission } from './content/types';
+import { startMusic, stopMusic, suspendAudio, tap } from './audio/audio';
+import { loadRecordingKeys } from './audio/recordings';
+import { ForestBackground } from './components/ForestBackground';
+import { buildPracticeMission, makeRng } from './logic/generate';
+import { todayISO } from './logic/progress';
+import { Home } from './screens/Home';
+import { MissionPlayer } from './screens/MissionPlayer';
+import { Parent } from './screens/Parent';
+import { getProgress, useProgress } from './store/progressStore';
+
+type Screen =
+  | { name: 'home' }
+  | { name: 'parent' }
+  | { name: 'mission'; mission: Mission; practice: boolean; back: 'home' | 'parent'; run: number };
+
+function resolveMission(m: Mission | 'practice'): { mission: Mission; practice: boolean } {
+  if (m !== 'practice') return { mission: m, practice: false };
+  return { mission: buildPracticeMission(getProgress(), todayISO(), makeRng(`practice-${Date.now()}`)), practice: true };
+}
+
+/** Звуки на натискання, фонова музика і пауза, коли телефон заблоковано. */
+function useAmbientAudio(music: boolean) {
+  const [unlocked, setUnlocked] = useState(false);
+
+  useEffect(() => {
+    // Браузер дозволяє звук лише після першого дотику.
+    const onPointer = (e: PointerEvent) => {
+      setUnlocked(true);
+      const button = (e.target as HTMLElement | null)?.closest('button');
+      if (button && !button.disabled) tap();
+    };
+    const onVisibility = () => suspendAudio(document.hidden);
+    window.addEventListener('pointerdown', onPointer);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('pointerdown', onPointer);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!unlocked) return;
+    if (music) startMusic();
+    else stopMusic();
+  }, [music, unlocked]);
+}
+
+export default function App() {
+  const [screen, setScreen] = useState<Screen>({ name: 'home' });
+  const { settings } = useProgress();
+  useAmbientAudio(settings.music);
+
+  useEffect(() => {
+    void loadRecordingKeys();
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = settings.theme;
+    document.querySelector('meta[name=theme-color]')?.setAttribute('content', settings.theme === 'night' ? '#1B1F3F' : '#FFF1DC');
+  }, [settings.theme]);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [screen]);
+
+  const start = useCallback(
+    (m: Mission | 'practice', back: 'home' | 'parent') => setScreen({ name: 'mission', ...resolveMission(m), back, run: Date.now() }),
+    [],
+  );
+
+  return (
+    <>
+      <ForestBackground night={settings.theme === 'night'} />
+      <div className="app">
+        {screen.name === 'home' && <Home onStart={(m) => start(m, 'home')} onParent={() => setScreen({ name: 'parent' })} />}
+        {screen.name === 'parent' && <Parent onBack={() => setScreen({ name: 'home' })} onStart={(m) => start(m, 'parent')} />}
+        {screen.name === 'mission' && (
+          <MissionPlayer
+            key={screen.run}
+            mission={screen.mission}
+            onExit={() => setScreen(screen.back === 'home' ? { name: 'home' } : { name: 'parent' })}
+            onRepeat={() => start(screen.practice ? 'practice' : screen.mission, screen.back)}
+          />
+        )}
+      </div>
+    </>
+  );
+}

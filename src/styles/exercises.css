@@ -1,0 +1,684 @@
+.exercise {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(16px, 2.6vw, 26px);
+  width: 100%;
+}
+
+.exercise__tools {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* ---------- Вибір букви ---------- */
+
+.sample-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 40px 22px;
+  border-radius: var(--radius-md);
+  background: var(--fox-pale);
+  border: 3px solid var(--fox-soft);
+}
+
+.sample-card__tag {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #b45a24;
+}
+
+.letter-glyph--sample {
+  font-size: clamp(4rem, 9vw, 6rem);
+}
+
+.listen-badge {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: var(--leaf-pale);
+}
+
+.listen-badge__ear {
+  font-size: 3.4rem;
+  animation: ear-listen 2.4s ease-in-out infinite;
+}
+
+.listen-badge__waves {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 3px solid rgba(111, 174, 106, 0.4);
+  animation: waves 2.4s ease-out infinite;
+}
+
+@keyframes ear-listen {
+  50% {
+    transform: rotate(-8deg) scale(1.06);
+  }
+}
+
+@keyframes waves {
+  from {
+    transform: scale(0.85);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.25);
+    opacity: 0;
+  }
+}
+
+.choice-row {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: clamp(14px, 3vw, 30px);
+}
+
+.choice-tile {
+  width: clamp(120px, 19vw, 172px);
+  aspect-ratio: 1;
+  border-radius: var(--radius-md);
+  border: 3px solid #f1e5d4;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  box-shadow: var(--shadow-tile);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.3s, border-color 0.2s;
+}
+
+.choice-tile:not(:disabled):hover {
+  transform: translateY(-3px);
+}
+
+.choice-tile:not(:disabled):active {
+  transform: translateY(4px);
+  box-shadow: var(--shadow-tile-pressed);
+}
+
+.choice-tile--tried {
+  animation: wiggle 0.45s ease;
+  opacity: 0.35;
+}
+
+.choice-tile--dim {
+  opacity: 0.3;
+}
+
+.choice-tile--glow {
+  border-color: var(--sun);
+  animation: glow 1.4s ease-in-out infinite;
+}
+
+.choice-tile--correct {
+  border-color: var(--leaf);
+  background: var(--leaf-pale);
+  animation: correct 0.5s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
+.choice-tile--correct .letter-glyph {
+  color: var(--leaf-dark);
+}
+
+.choice-tile--rest {
+  opacity: 0.35;
+}
+
+@keyframes wiggle {
+  20% {
+    transform: rotate(-6deg);
+  }
+  40% {
+    transform: rotate(5deg);
+  }
+  60% {
+    transform: rotate(-3deg);
+  }
+  80% {
+    transform: rotate(2deg);
+  }
+}
+
+@keyframes glow {
+  0%,
+  100% {
+    box-shadow: var(--shadow-tile), 0 0 0 0 rgba(255, 211, 110, 0.7);
+  }
+  50% {
+    box-shadow: var(--shadow-tile), 0 0 0 14px rgba(255, 211, 110, 0);
+    transform: scale(1.04);
+  }
+}
+
+@keyframes correct {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1.05);
+  }
+}
+
+/* ---------- Знайомство з буквою ---------- */
+
+.intro-card {
+  position: relative;
+  border: none;
+  background: linear-gradient(180deg, #fff, var(--fox-pale));
+  border-radius: 40px;
+  padding: clamp(20px, 3vw, 34px) clamp(40px, 6vw, 70px);
+  box-shadow: var(--shadow-tile), inset 0 0 0 3px var(--fox-soft);
+  transition: transform 0.15s;
+}
+
+.intro-card:active {
+  transform: scale(0.97);
+}
+
+.intro-card--tapped {
+  animation: intro-bounce 0.6s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+
+.intro-card__letters {
+  display: flex;
+  align-items: baseline;
+  gap: clamp(14px, 2.4vw, 28px);
+}
+
+.letter-glyph--hero {
+  font-size: clamp(7rem, 18vw, 11rem);
+}
+
+.letter-glyph--hero-lower {
+  font-size: clamp(5rem, 12vw, 7.5rem);
+}
+
+.intro-card--vowel .letter-glyph {
+  color: var(--vowel);
+}
+
+.intro-card--consonant .letter-glyph {
+  color: var(--consonant);
+}
+
+.intro-card__tap {
+  position: absolute;
+  right: 6px;
+  bottom: -4px;
+  font-size: 2.6rem;
+  animation: tap-hint 1.6s ease-in-out infinite;
+}
+
+.intro-card__sparkles i {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: var(--sun);
+  clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
+  opacity: 0;
+}
+
+.intro-card--tapped .intro-card__sparkles i {
+  animation: sparkle 0.9s ease-out both;
+}
+
+.intro-card__sparkles i:nth-child(1) {
+  top: 8%;
+  left: 6%;
+}
+
+.intro-card__sparkles i:nth-child(2) {
+  top: 14%;
+  right: 8%;
+  animation-delay: 0.12s !important;
+}
+
+.intro-card__sparkles i:nth-child(3) {
+  bottom: 12%;
+  left: 46%;
+  animation-delay: 0.24s !important;
+}
+
+@keyframes intro-bounce {
+  40% {
+    transform: scale(1.08) rotate(-2deg);
+  }
+  70% {
+    transform: scale(0.98) rotate(1deg);
+  }
+}
+
+@keyframes sparkle {
+  0% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.6) rotate(45deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.6) rotate(90deg);
+  }
+}
+
+@keyframes tap-hint {
+  50% {
+    transform: translate(-6px, -8px);
+  }
+}
+
+/* ---------- З'єднай звуки ---------- */
+
+.blend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 2vw, 20px);
+}
+
+.blend__tile {
+  width: clamp(120px, 18vw, 160px);
+  aspect-ratio: 1;
+  border-radius: var(--radius-md);
+  border: 3px solid #f1e5d4;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  box-shadow: var(--shadow-tile);
+  transition: transform 0.5s cubic-bezier(0.5, 0, 0.2, 1.3), border-color 0.2s, background 0.2s;
+}
+
+.blend__tile--vowel .letter-glyph {
+  color: var(--vowel);
+}
+
+.blend__tile--consonant .letter-glyph {
+  color: var(--consonant);
+}
+
+.blend__tile--next {
+  border-color: var(--sun);
+  animation: glow 1.4s ease-in-out infinite;
+}
+
+.blend--step-1 .blend__tile--a,
+.blend--step-2 .blend__tile {
+  background: var(--leaf-pale);
+  border-color: #cfe6c5;
+}
+
+.blend__bridge {
+  display: flex;
+  gap: 8px;
+  transition: opacity 0.3s, width 0.5s;
+  width: clamp(60px, 10vw, 110px);
+  justify-content: center;
+}
+
+.blend__bridge span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--fox-soft);
+}
+
+.blend--step-1 .blend__bridge span {
+  animation: paw-step 1.2s ease-in-out infinite;
+}
+
+.blend--step-1 .blend__bridge span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.blend--step-1 .blend__bridge span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+.blend--step-2 .blend__bridge {
+  opacity: 0;
+  width: 0;
+}
+
+.blend--step-2 {
+  gap: 0;
+}
+
+@keyframes paw-step {
+  50% {
+    background: var(--fox);
+    transform: scale(1.3);
+  }
+}
+
+.blend__result {
+  animation: pop-in 0.45s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+  padding: 6px 30px;
+  border-radius: var(--radius-md);
+  background: var(--sun-pale);
+}
+
+/* ---------- Читання ---------- */
+
+.read-card {
+  position: relative;
+  min-height: clamp(160px, 22vw, 210px);
+  min-width: min(100%, 360px);
+  padding: 20px 40px;
+  border-radius: 36px;
+  background: #fff;
+  box-shadow: inset 0 0 0 3px #f1e5d4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.read-card--revealed {
+  box-shadow: inset 0 0 0 3px #cfe6c5;
+  background: linear-gradient(180deg, #fff, var(--leaf-pale));
+}
+
+.syllable-split {
+  display: flex;
+  gap: clamp(18px, 3vw, 34px);
+}
+
+.syllable-split__part {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  animation: pop-in 0.35s ease both;
+}
+
+.syllable-split__arc {
+  width: 100%;
+  min-width: 60px;
+  height: 18px;
+  border: 4px solid var(--fox);
+  border-top: none;
+  border-radius: 0 0 60px 60px;
+}
+
+.sound-split {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.sound-split__part {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 0 clamp(18px, 3vw, 34px);
+  animation: pop-in 0.35s ease both;
+}
+
+.sound-split__letter {
+  font-size: clamp(4.4rem, 11vw, 7rem);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.sound-split__say {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--ink-soft);
+  background: var(--sun-pale);
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+
+.sound-split__arrow {
+  position: absolute;
+  right: -14px;
+  top: 38%;
+  width: 28px;
+  height: 4px;
+  background: var(--fox);
+  border-radius: 2px;
+}
+
+.sound-split__arrow::after {
+  content: '';
+  position: absolute;
+  right: -2px;
+  top: -6px;
+  border: 8px solid transparent;
+  border-left: 10px solid var(--fox);
+  border-right: none;
+}
+
+.word-reveal {
+  display: grid;
+  place-items: center;
+  width: clamp(110px, 15vw, 150px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 10px 24px -14px rgba(62, 51, 80, 0.5), inset 0 0 0 4px var(--sun-pale);
+  animation: reveal 0.7s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
+.word-reveal__picture {
+  font-size: clamp(3.6rem, 8vw, 5rem);
+  line-height: 1;
+}
+
+.word-reveal--inline {
+  margin-left: 10px;
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: scale(0.3) rotate(-20deg);
+  }
+}
+
+.word-note {
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+/* ---------- Склади слово ---------- */
+
+.word-slots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 30px;
+  background: var(--fox-pale);
+}
+
+.word-slots--built {
+  background: var(--sun-pale);
+  gap: 0;
+  padding: 14px 28px;
+}
+
+.word-slots--revealed {
+  background: var(--leaf-pale);
+}
+
+.word-slot {
+  width: clamp(96px, 14vw, 128px);
+  height: clamp(86px, 12vw, 112px);
+  border-radius: var(--radius-sm);
+  border: 3px dashed #f1bf98;
+  display: grid;
+  place-items: center;
+  transition: all 0.3s;
+}
+
+.word-slot--next {
+  border-color: var(--fox);
+  background: rgba(255, 255, 255, 0.6);
+  animation: slot-pulse 1.6s ease-in-out infinite;
+}
+
+.word-slot--filled {
+  border: 3px solid transparent;
+  background: #fff;
+  box-shadow: 0 4px 0 #eadcc8;
+  animation: pop-in 0.3s ease both;
+}
+
+.word-slots--built .word-slot {
+  box-shadow: none;
+  background: transparent;
+  border: none;
+  width: auto;
+  padding: 0;
+  animation: none;
+}
+
+.word-slots--built .reading-text--tile {
+  font-size: clamp(3.4rem, 8vw, 5rem);
+  transition: font-size 0.3s;
+}
+
+.word-slots--built .word-reveal--inline {
+  margin-left: 24px;
+}
+
+@keyframes slot-pulse {
+  50% {
+    background: rgba(255, 255, 255, 1);
+  }
+}
+
+.tile-pool {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: clamp(12px, 2.4vw, 22px);
+}
+
+.syllable-tile {
+  min-width: clamp(110px, 15vw, 140px);
+  height: clamp(92px, 12vw, 112px);
+  padding: 0 18px;
+  border-radius: var(--radius-md);
+  border: 3px solid #f1e5d4;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  box-shadow: var(--shadow-tile);
+  transition: transform 0.15s, opacity 0.3s;
+}
+
+.syllable-tile:not(:disabled):active {
+  transform: translateY(4px);
+  box-shadow: var(--shadow-tile-pressed);
+}
+
+.syllable-tile--used {
+  opacity: 0.18;
+  transform: scale(0.92);
+}
+
+.syllable-tile--shake {
+  animation: wiggle 0.45s ease;
+}
+
+.syllable-tile--glow {
+  border-color: var(--sun);
+  animation: glow 1.4s ease-in-out infinite;
+}
+
+/* ---------- Пари складів ---------- */
+
+.match-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(12px, 2vw, 20px);
+  width: min(100%, 600px);
+}
+
+.match-grid--8 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: min(100%, 720px);
+}
+
+.match-grid--4 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: min(100%, 400px);
+}
+
+.match-card {
+  position: relative;
+  height: clamp(96px, 13vw, 124px);
+  border-radius: var(--radius-md);
+  border: 3px solid #f1e5d4;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  box-shadow: var(--shadow-tile);
+  transition: transform 0.15s, border-color 0.2s, background 0.2s;
+}
+
+.match-card:not(:disabled):active {
+  transform: translateY(4px);
+  box-shadow: var(--shadow-tile-pressed);
+}
+
+.match-card--selected {
+  border-color: var(--sky);
+  background: #eef8fa;
+  transform: translateY(-4px);
+}
+
+.match-card--wrong {
+  animation: wiggle 0.45s ease;
+  border-color: #f3dc9b;
+}
+
+.match-card--glow {
+  border-color: var(--sun);
+  animation: glow 1.4s ease-in-out infinite;
+}
+
+.match-card--matched {
+  border-color: #cfe6c5;
+  background: var(--leaf-pale);
+  animation: correct 0.45s ease both;
+}
+
+.match-card__check {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-weight: 900;
+  font-size: 1.2rem;
+  color: var(--leaf-dark);
+}
+
+@media (max-width: 560px) {
+  .match-grid--8 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .sound-split__part {
+    padding: 0 14px;
+  }
+}
