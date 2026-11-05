@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Mission } from './content/types';
-import { startMusic, stopMusic, suspendAudio, tap } from './audio/audio';
+import { suspendAudio, tap } from './audio/audio';
 import { loadRecordingKeys } from './audio/recordings';
 import { ForestBackground } from './components/ForestBackground';
 import { buildPracticeMission, makeRng } from './logic/generate';
@@ -20,14 +20,10 @@ function resolveMission(m: Mission | 'practice'): { mission: Mission; practice: 
   return { mission: buildPracticeMission(getProgress(), todayISO(), makeRng(`practice-${Date.now()}`)), practice: true };
 }
 
-/** Звуки на натискання, фонова музика і пауза, коли телефон заблоковано. */
-function useAmbientAudio(music: boolean) {
-  const [unlocked, setUnlocked] = useState(false);
-
+/** Звук на натискання кнопок і пауза звуку, коли телефон заблоковано. */
+function useTapSounds() {
   useEffect(() => {
-    // Браузер дозволяє звук лише після першого дотику.
     const onPointer = (e: PointerEvent) => {
-      setUnlocked(true);
       const button = (e.target as HTMLElement | null)?.closest('button');
       if (button && !button.disabled) tap();
     };
@@ -40,17 +36,12 @@ function useAmbientAudio(music: boolean) {
     };
   }, []);
 
-  useEffect(() => {
-    if (!unlocked) return;
-    if (music) startMusic();
-    else stopMusic();
-  }, [music, unlocked]);
 }
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>({ name: 'home' });
   const { settings } = useProgress();
-  useAmbientAudio(settings.music);
+  useTapSounds();
 
   useEffect(() => {
     void loadRecordingKeys();

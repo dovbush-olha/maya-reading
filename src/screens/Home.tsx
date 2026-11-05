@@ -51,15 +51,6 @@ export function Home({ onStart, onParent }: Props) {
           >
             {settings.theme === 'day' ? '🌙' : '☀️'}
           </button>
-          <button
-            type="button"
-            className={`icon-button ${settings.music ? '' : 'icon-button--off'}`}
-            onClick={() => updateProgress((s) => updateSettings(s, { music: !settings.music }))}
-            aria-label={settings.music ? 'Вимкнути музику' : 'Увімкнути музику'}
-            aria-pressed={settings.music}
-          >
-            🎵
-          </button>
           <button type="button" className="hold-button" onClick={() => setGate(true)} aria-label="Для дорослих">
             <span aria-hidden="true">🔑</span>
             <span className="hold-button__label">Для дорослих</span>

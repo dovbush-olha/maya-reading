@@ -37,8 +37,6 @@ export interface MissionRecord {
 export interface Settings {
   /** Тихі звуки натискань і дзвіночок за правильну відповідь. */
   sounds: boolean;
-  /** Ледь чутна фонова музика. */
-  music: boolean;
   /** Склади й слова: усі великими (МАМА) чи як у книжці (Мама). */
   readingCase: 'upper' | 'natural';
   theme: 'day' | 'night';
@@ -49,7 +47,6 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   sounds: true,
-  music: true,
   readingCase: 'upper',
   theme: 'day',
   helper: 'fox',
@@ -61,7 +58,6 @@ function normalizeSettings(raw: unknown): Settings {
   const d = DEFAULT_SETTINGS;
   return {
     sounds: typeof r.sounds === 'boolean' ? r.sounds : d.sounds,
-    music: typeof r.music === 'boolean' ? r.music : d.music,
     readingCase: r.readingCase === 'natural' || r.readingCase === 'upper' ? r.readingCase : d.readingCase,
     theme: r.theme === 'night' || r.theme === 'day' ? r.theme : d.theme,
     helper: isHelperId(r.helper) ? r.helper : d.helper,

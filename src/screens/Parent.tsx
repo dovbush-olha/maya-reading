@@ -429,13 +429,6 @@ function SettingsTab() {
         />
         <label className="switch-row">
           <span>
-            <b>Тиха музика</b>
-            <small>Ледь чутна мелодія на фоні.</small>
-          </span>
-          <input type="checkbox" checked={settings.music} onChange={(e) => set({ music: e.target.checked })} />
-        </label>
-        <label className="switch-row">
-          <span>
             <b>Звуки натискань</b>
             <small>М’який звук на кожне натискання і дзвіночок за правильну відповідь. Звуків за помилку немає.</small>
           </span>
