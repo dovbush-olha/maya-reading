@@ -4,7 +4,8 @@ import { HINTS, PRAISE, PRAISE_READING_ALONE, PRAISE_READING_TOGETHER, pick } fr
 import type { ReadSyllableExercise, ReadWordExercise } from '../../content/types';
 import { getWord } from '../../content/words';
 import { chime } from '../../audio/audio';
-import { AdultPrompt, ColoredText, HintButton, ReadingMarks, SoloReadButton } from '../ui';
+import { SoloRead } from '../SoloRead';
+import { AdultPrompt, ColoredText, HintButton, ReadingMarks } from '../ui';
 import { caseText, stretch } from '../text';
 import { SyllableSplit } from './SyllableSplit';
 import type { ExerciseProps } from './types';
@@ -79,7 +80,7 @@ export function ReadItem({ exercise, readingCase, solo, completed, onFeedback, o
           <div className="exercise__tools">
             <HintButton onClick={showHint} disabled={hint} />
           </div>
-          {solo ? <SoloReadButton onDone={soloDone} /> : <ReadingMarks onMark={mark} />}
+          {solo ? <SoloRead text={text} onDone={soloDone} /> : <ReadingMarks onMark={mark} />}
         </>
       )}
       {completed && word?.note && !solo && <p className="word-note">{word.note}</p>}

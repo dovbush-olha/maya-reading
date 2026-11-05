@@ -1,31 +1,11 @@
 import { useSyncExternalStore } from 'react';
 import type { LetterId } from '../content/alphabet';
+import { tx } from './db';
 
 /**
  * Записи голосу дорослого (звуки букв) у IndexedDB на самому пристрої.
  * Коли дитина грається сама, вправа «вибери букву за звуком» відтворює мамин запис.
  */
-const DB_NAME = 'maya-adventures';
-const STORE = 'recordings';
-
-function openDb(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1);
-    req.onupgradeneeded = () => req.result.createObjectStore(STORE);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-async function tx<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest<T>): Promise<T> {
-  const db = await openDb();
-  return new Promise((resolve, reject) => {
-    const t = db.transaction(STORE, mode);
-    const req = fn(t.objectStore(STORE));
-    t.oncomplete = () => resolve(req.result);
-    t.onerror = () => reject(t.error);
-  });
-}
 
 export const soundKey = (l: LetterId) => `sound:${l}`;
 
@@ -35,7 +15,7 @@ const emit = () => listeners.forEach((l) => l());
 
 export async function loadRecordingKeys() {
   try {
-    const all = await tx('readonly', (s) => s.getAllKeys());
+    const all = await tx('recordings', 'readonly', (s) => s.getAllKeys());
     keys = new Set(all.map(String));
     emit();
   } catch {
@@ -48,13 +28,13 @@ export function hasRecording(key: string): boolean {
 }
 
 export async function saveRecording(key: string, blob: Blob) {
-  await tx('readwrite', (s) => s.put(blob, key));
+  await tx('recordings', 'readwrite', (s) => s.put(blob, key));
   keys = new Set(keys).add(key);
   emit();
 }
 
 export async function deleteRecording(key: string) {
-  await tx('readwrite', (s) => s.delete(key));
+  await tx('recordings', 'readwrite', (s) => s.delete(key));
   const next = new Set(keys);
   next.delete(key);
   keys = next;
@@ -63,10 +43,9 @@ export async function deleteRecording(key: string) {
 
 let current: HTMLAudioElement | undefined;
 
-export async function playRecording(key: string): Promise<boolean> {
+/** Відтворює запис; попередній, якщо ще звучить, зупиняється. */
+export async function playBlob(blob: Blob): Promise<boolean> {
   try {
-    const blob = await tx<Blob | undefined>('readonly', (s) => s.get(key));
-    if (!blob) return false;
     current?.pause();
     const url = URL.createObjectURL(blob);
     const el = new Audio(url);
@@ -74,6 +53,15 @@ export async function playRecording(key: string): Promise<boolean> {
     el.onended = () => URL.revokeObjectURL(url);
     await el.play();
     return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function playRecording(key: string): Promise<boolean> {
+  try {
+    const blob = await tx<Blob | undefined>('recordings', 'readonly', (s) => s.get(key));
+    return blob ? await playBlob(blob) : false;
   } catch {
     return false;
   }
@@ -118,4 +106,15 @@ export async function startRecording(maxMs = 2500): Promise<{ stop: () => void; 
   rec.start();
   const timer = window.setTimeout(stop, maxMs);
   return { stop, done };
+}
+
+/** Питаємо дозвіл на мікрофон заздалегідь, у режимі дорослого, щоб дитина не бачила цього питання. */
+export async function requestMicrophone(): Promise<boolean> {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach((t) => t.stop());
+    return true;
+  } catch {
+    return false;
+  }
 }

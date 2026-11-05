@@ -4,7 +4,8 @@ import type { BuildWordExercise } from '../../content/types';
 import { getWord, syllablesOf } from '../../content/words';
 import { chime } from '../../audio/audio';
 import { makeRng, shuffle } from '../../logic/generate';
-import { AdultPrompt, ColoredText, HintButton, ReadingMarks, SoloReadButton } from '../ui';
+import { SoloRead } from '../SoloRead';
+import { AdultPrompt, ColoredText, HintButton, ReadingMarks } from '../ui';
 import { caseText } from '../text';
 import type { ExerciseProps } from './types';
 
@@ -141,7 +142,7 @@ export function BuildWord({ exercise, seed, readingCase, solo, completed, onFeed
       {built && !completed && (
         <>
           {!solo && <AdultPrompt>Нехай Майя прочитає складене слово. Картинка з’явиться після читання.</AdultPrompt>}
-          {solo ? <SoloReadButton onDone={soloDone} /> : <ReadingMarks onMark={mark} />}
+          {solo ? <SoloRead text={word.text} onDone={soloDone} /> : <ReadingMarks onMark={mark} />}
         </>
       )}
       {completed && word.note && !solo && <p className="word-note">{word.note}</p>}

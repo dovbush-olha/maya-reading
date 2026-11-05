@@ -3,7 +3,8 @@ import { BASE_LETTERS, LETTERS, NOT_YET_STUDIED, PLANNED_LETTERS, UKRAINIAN_ALPH
 import { CHILD_NAME } from '../content/phrases';
 import type { Mission } from '../content/types';
 import { WEEK_1, WEEK_1_MISSIONS } from '../content/week1';
-import { canRecord, deleteRecording, playRecording, saveRecording, soundKey, startRecording, useRecordingKeys } from '../audio/recordings';
+import { clearReadings, playReading, removeReading, usePendingReadings } from '../audio/readings';
+import { canRecord, deleteRecording, playRecording, requestMicrophone, saveRecording, soundKey, startRecording, useRecordingKeys } from '../audio/recordings';
 import { HELPERS } from '../content/helpers';
 import { Helper } from '../components/Helper';
 import { Modal } from '../components/ui';
@@ -23,6 +24,7 @@ import {
 } from '../logic/progress';
 import { resetProgress, updateProgress, useProgress } from '../store/progressStore';
 import { plural } from '../components/text';
+import type { PendingReading } from '../logic/readingQueue';
 
 type Tab = 'letters' | 'reading' | 'missions' | 'settings';
 
@@ -39,7 +41,8 @@ interface Props {
 }
 
 export function Parent({ onBack, onStart }: Props) {
-  const [tab, setTab] = useState<Tab>('letters');
+  const pending = usePendingReadings().length;
+  const [tab, setTab] = useState<Tab>(pending ? 'reading' : 'letters');
   return (
     <div className="screen parent">
       <header className="parent__header">
@@ -59,6 +62,11 @@ export function Parent({ onBack, onStart }: Props) {
             onClick={() => setTab(t.id)}
           >
             <span aria-hidden="true">{t.icon}</span> {t.label}
+            {t.id === 'reading' && pending > 0 && (
+              <span className="tabs__badge" aria-label={`нових записів: ${pending}`}>
+                {pending}
+              </span>
+            )}
           </button>
         ))}
       </nav>
@@ -279,7 +287,9 @@ function ReadingTab() {
   };
 
   return (
-    <section className="panel">
+    <>
+      <ReadingReview />
+      <section className="panel">
       <h2 className="panel__title">Чи читає {CHILD_NAME} склади без допомоги</h2>
       <p className="panel__hint">
         Під час місій ви відмічаєте результат кнопками «Прочитала сама» / «Прочитали разом». Тут можна побачити підсумок і додати
@@ -292,8 +302,86 @@ function ReadingTab() {
           <ul className="read-list">{items.words.map(row)}</ul>
         </>
       )}
+      </section>
+    </>
+  );
+}
+
+/** Записи того, як дитина читала сама: дорослий слухає й відмічає, і відмітка йде в журнал читання. */
+function ReadingReview() {
+  const { recordReading, mode } = useProgress().settings;
+  const items = usePendingReadings();
+  const [busy, setBusy] = useState<string | null>(null);
+  if (!items.length && !(recordReading && mode === 'solo')) return null;
+
+  const resolve = async (r: PendingReading, ok?: boolean) => {
+    setBusy(r.id);
+    try {
+      // Спершу видаляємо запис: якщо не вийде, відмітка не задвоїться при повторному натисканні.
+      await removeReading(r.id);
+      if (ok !== undefined) updateProgress((s) => logReading(s, r.text, ok, todayISO(new Date(r.at))));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <section className="panel">
+      <h2 className="panel__title">Послухайте, як {CHILD_NAME} читала сама</h2>
+      <p className="panel__hint">
+        Натисніть ▶ і відмітьте, чи прочитала правильно. Відмітка потрапить у журнал нижче й допоможе вибирати, що повторювати, а запис
+        видалиться. Записи зберігаються лише на цьому пристрої.
+      </p>
+      {items.length ? (
+        <ul className="read-list">
+          {items.map((r) => (
+            <li key={r.id} className="read-row review-row">
+              <button type="button" className="review-row__play" onClick={() => void playReading(r.id)} aria-label={`Послухати «${r.text}»`}>
+                <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true">
+                  <path d="M6 3.5v13a1 1 0 0 0 1.5.86l11-6.5a1 1 0 0 0 0-1.72l-11-6.5A1 1 0 0 0 6 3.5Z" fill="currentColor" />
+                </svg>
+              </button>
+              <span className="review-row__info">
+                <span className="read-row__text">{r.text.toLocaleUpperCase('uk-UA')}</span>
+                <small className="review-row__when">{formatWhen(r.at)}</small>
+              </span>
+              <span className="read-row__actions">
+                <button type="button" className="chip chip--alone" disabled={busy === r.id} onClick={() => void resolve(r, true)}>
+                  ⭐ Правильно
+                </button>
+                <button type="button" className="chip" disabled={busy === r.id} onClick={() => void resolve(r, false)}>
+                  🤝 Ще вчимо
+                </button>
+                <button
+                  type="button"
+                  className="chip chip--icon"
+                  disabled={busy === r.id}
+                  onClick={() => void resolve(r)}
+                  aria-label={`Видалити запис «${r.text}» без відмітки`}
+                  title="Не чути - видалити без відмітки"
+                >
+                  🗑
+                </button>
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="review-empty">Нових записів немає. Вони з’являться, коли {CHILD_NAME} пограється сама.</p>
+      )}
     </section>
   );
+}
+
+function formatWhen(iso: string) {
+  const d = new Date(iso);
+  const time = d.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
+  const day = todayISO(d);
+  if (day === todayISO()) return `сьогодні о ${time}`;
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (day === todayISO(yesterday)) return `учора о ${time}`;
+  return `${formatDate(day)} о ${time}`;
 }
 
 function MissionsTab({ onStart }: { onStart: Props['onStart'] }) {
@@ -398,7 +486,7 @@ function SettingsTab() {
           title="Хто поруч"
           hint={
             settings.mode === 'solo'
-              ? 'Сама: слова перевіряються вибором картинки, склади - кнопкою «Прочитала!», звук букви - вашим записом (якщо є).'
+              ? `Сама: слова перевіряються вибором картинки, склади - ${settings.recordReading ? 'записом читання, який ви послухаєте потім' : 'кнопкою «Прочитала!»'}, звук букви - вашим записом (якщо є).`
               : 'З дорослим: ви бачите підказки, що сказати, і відмічаєте, чи прочитала сама.'
           }
           value={settings.mode}
@@ -408,6 +496,7 @@ function SettingsTab() {
           ]}
           onChange={(mode) => set({ mode })}
         />
+        {settings.mode === 'solo' && <RecordReadingSwitch />}
         <Choice
           title="Букви для читання складів і слів"
           hint="Усі великими, як на початку букваря, або як пишеться в книжці (імена з великої)."
@@ -475,6 +564,7 @@ function SettingsTab() {
                 className="big-button big-button--small big-button--danger"
                 onClick={() => {
                   resetProgress();
+                  void clearReadings();
                   setConfirmReset(false);
                 }}
               >
@@ -483,9 +573,44 @@ function SettingsTab() {
             </>
           }
         >
-          <p>Зникнуть пройдені місії, зірочки, наліпки, статуси букв і відмітки читання. Записи голосу залишаться.</p>
+          <p>Зникнуть пройдені місії, зірочки, наліпки, статуси букв, відмітки й записи читання. Ваш голос для звуків залишиться.</p>
         </Modal>
       )}
+    </>
+  );
+}
+
+/** Дорослий вмикає запис читання - і одразу дає дозвіл на мікрофон, щоб дитина цього питання не бачила. */
+function RecordReadingSwitch() {
+  const { recordReading } = useProgress().settings;
+  const [error, setError] = useState<string | null>(null);
+  const available = canRecord();
+
+  const toggle = async (on: boolean) => {
+    setError(null);
+    if (on && !(await requestMicrophone())) {
+      setError('Не вдалося ввімкнути мікрофон. Дозвольте доступ до мікрофона в браузері й спробуйте ще раз.');
+      return;
+    }
+    updateProgress((s) => updateSettings(s, { recordReading: on }));
+  };
+
+  return (
+    <>
+      <label className="switch-row">
+        <span>
+          <b>Записувати, як {CHILD_NAME} читає</b>
+          <small>
+            Замість зірочки «Прочитала!» - кнопка 🎙️: {CHILD_NAME} читає вголос і одразу чує себе. Ви послухаєте записи на вкладці
+            «Читання складів» і відмітите, чи правильно. Записи залишаються лише на цьому пристрої.
+          </small>
+        </span>
+        <input type="checkbox" checked={recordReading && available} disabled={!available} onChange={(e) => void toggle(e.target.checked)} />
+      </label>
+      {!available && (
+        <p className="warning">Запис доступний, коли застосунок відкрито через захищене з’єднання (https) або на цьому комп’ютері (localhost).</p>
+      )}
+      {error && <p className="warning">{error}</p>}
     </>
   );
 }

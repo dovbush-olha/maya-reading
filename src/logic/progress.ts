@@ -43,6 +43,8 @@ export interface Settings {
   helper: HelperId;
   /** «solo» - дитина грається сама на телефоні; «together» - поруч дорослий, який відмічає читання. */
   mode: 'solo' | 'together';
+  /** Коли дитина грається сама, її читання записується, щоб дорослий потім послухав і відмітив. */
+  recordReading: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -51,6 +53,7 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: 'day',
   helper: 'fox',
   mode: 'solo',
+  recordReading: false,
 };
 
 function normalizeSettings(raw: unknown): Settings {
@@ -62,6 +65,7 @@ function normalizeSettings(raw: unknown): Settings {
     theme: r.theme === 'night' || r.theme === 'day' ? r.theme : d.theme,
     helper: isHelperId(r.helper) ? r.helper : d.helper,
     mode: r.mode === 'together' || r.mode === 'solo' ? r.mode : d.mode,
+    recordReading: typeof r.recordReading === 'boolean' ? r.recordReading : d.recordReading,
   };
 }
 
@@ -92,7 +96,7 @@ export interface ExerciseResult {
   /** Ознайомчі екрани не враховуються в частці підказок. */
   unscored?: boolean;
   letters?: LetterOutcome[];
-  /** Відмітка читання. Записуємо лише перевірене: дорослим або вибором картинки. */
+  /** Відмітка читання. Записуємо лише перевірене: дорослим (одразу чи потім, за записом) або вибором картинки. */
   reading?: ReadingOutcome;
 }
 

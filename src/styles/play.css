@@ -228,6 +228,58 @@
   animation: star-wobble 2.4s ease-in-out infinite;
 }
 
+.solo-read:disabled {
+  cursor: default;
+}
+
+.solo-read--mic:disabled {
+  opacity: 0.7;
+}
+
+/* Іде запис: тепла «ягідна» кнопка з пульсуючою крапкою, як на диктофоні. */
+.solo-read--recording {
+  background: linear-gradient(180deg, #f28aa6, var(--berry));
+  box-shadow: 0 6px 0 #c24f70, 0 14px 24px -12px #c24f70;
+  text-shadow: 0 1px 0 rgba(120, 30, 60, 0.35);
+  animation: rec-breathe 1.6s ease-in-out infinite;
+}
+
+.solo-read--recording:active {
+  box-shadow: 0 1px 0 #c24f70;
+}
+
+.solo-read--recording:disabled {
+  opacity: 1;
+}
+
+.solo-read__dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+  animation: rec-dot 1.2s ease-out infinite;
+}
+
+@keyframes rec-dot {
+  to {
+    box-shadow: 0 0 0 12px rgba(255, 255, 255, 0);
+  }
+}
+
+@keyframes rec-breathe {
+  50% {
+    transform: scale(1.03);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .solo-read--recording,
+  .solo-read__dot {
+    animation: none;
+  }
+}
+
 @keyframes star-wobble {
   50% {
     transform: rotate(18deg) scale(1.12);
@@ -728,6 +780,11 @@
     flex: 1 1 0;
     min-width: 0;
     padding: 8px 6px;
+  }
+
+  .read-row__actions .chip--icon {
+    flex: 0 0 auto;
+    padding: 8px 12px;
   }
 
   .switch-row--choice {

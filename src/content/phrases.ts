@@ -58,7 +58,7 @@ export const HINTS = {
   buildMore: 'Так! А який склад далі?',
   pickWrong: 'Прочитай ще раз, по складах.',
   pickGlow: 'Ось потрібна картинка світиться.',
-  soloRead: 'Прочитай уголос і торкнись зірочки.',
+  soloRead: 'А тепер прочитай уголос!',
 };
 
 export const GREETINGS = [

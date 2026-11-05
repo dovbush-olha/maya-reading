@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { usePendingReadings } from '../audio/readings';
 import { HELPERS, helperName } from '../content/helpers';
 import { CHILD_NAME, GREETINGS, pick } from '../content/phrases';
 import type { Mission } from '../content/types';
@@ -20,6 +21,7 @@ const STATUS_ICON = { done: '⭐', available: '🌱', locked: '🔒', 'needs-let
 
 export function Home({ onStart, onParent }: Props) {
   const progress = useProgress();
+  const pendingReadings = usePendingReadings().length;
   const { settings } = progress;
   const rec = recommend(progress);
   const [greeting] = useState(() => pick(GREETINGS));
@@ -51,9 +53,15 @@ export function Home({ onStart, onParent }: Props) {
           >
             {settings.theme === 'day' ? '🌙' : '☀️'}
           </button>
-          <button type="button" className="hold-button" onClick={() => setGate(true)} aria-label="Для дорослих">
+          <button
+            type="button"
+            className="hold-button"
+            onClick={() => setGate(true)}
+            aria-label={pendingReadings ? 'Для дорослих: є нові записи читання' : 'Для дорослих'}
+          >
             <span aria-hidden="true">🔑</span>
             <span className="hold-button__label">Для дорослих</span>
+            {pendingReadings > 0 && <span className="hold-button__dot" aria-hidden="true" />}
           </button>
         </div>
       </header>

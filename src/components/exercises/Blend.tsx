@@ -4,7 +4,8 @@ import { HINTS, PRAISE, PRAISE_READING_ALONE, PRAISE_READING_TOGETHER, pick } fr
 import type { BlendExercise } from '../../content/types';
 import { chime } from '../../audio/audio';
 import { hasRecording, playRecording, soundKey } from '../../audio/recordings';
-import { AdultPrompt, ColoredText, ReadingMarks, SoloReadButton } from '../ui';
+import { SoloRead } from '../SoloRead';
+import { AdultPrompt, ColoredText, ReadingMarks } from '../ui';
 import { caseText, stretch } from '../text';
 import type { ExerciseProps } from './types';
 
@@ -99,7 +100,7 @@ export function Blend({ exercise, readingCase, solo, completed, onFeedback, onCo
         </AdultPrompt>
       )}
 
-      {step === 2 && !completed && (solo ? <SoloReadButton onDone={soloDone} /> : <ReadingMarks onMark={mark} />)}
+      {step === 2 && !completed && (solo ? <SoloRead text={syllable} onDone={soloDone} /> : <ReadingMarks onMark={mark} />)}
     </div>
   );
 }

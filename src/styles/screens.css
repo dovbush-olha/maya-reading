@@ -1155,3 +1155,89 @@
     height: 143px;
   }
 }
+
+/* ---------- Записи читання для дорослого ---------- */
+
+.tabs__badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--berry);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 900;
+  line-height: 1;
+  vertical-align: 1px;
+}
+
+.review-row {
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  border-color: #f6cdd9;
+}
+
+.review-row__play {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: none;
+  background: var(--berry);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  padding: 0 0 0 3px;
+  box-shadow: 0 4px 0 #c24f70;
+}
+
+.review-row__play:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #c24f70;
+}
+
+.review-row__info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.review-row__info .read-row__text {
+  overflow-wrap: anywhere;
+}
+
+.review-row__when {
+  color: var(--ink-faint);
+  font-size: 0.9rem;
+}
+
+.review-empty {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #fff;
+  border: 2px dashed #f1e5d4;
+  color: var(--ink-soft);
+}
+
+.chip--icon {
+  padding-inline: 12px;
+}
+
+@media (max-width: 640px) {
+  .review-row {
+    grid-template-columns: 52px minmax(0, 1fr);
+  }
+}
+
+.hold-button__dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--berry);
+  box-shadow: 0 0 0 3px var(--paper);
+}

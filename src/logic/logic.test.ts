@@ -13,8 +13,10 @@ import {
   createInitialState,
   normalizeState,
   unlockLetter,
+  updateSettings,
   type ProgressState,
 } from './progress';
+import { newestFirst, overflow } from './readingQueue';
 import { addDays, nextReview } from './srs';
 
 const TODAY = '2026-11-05';
@@ -255,5 +257,26 @@ describe('голос дорослого', () => {
     expect(preferRecordedVoice(find, () => false)).toBe(find);
     const voiced = preferRecordedVoice(find, () => true);
     expect(adaptForSolo(voiced, () => true, makeRng('x')).kind).toBe('letter-by-sound');
+  });
+});
+
+describe('записи читання для дорослого', () => {
+  const at = (minute: number) => `2026-11-05T10:${String(minute).padStart(2, '0')}:00.000Z`;
+  const item = (id: string, minute: number) => ({ id, text: 'ма', at: at(minute) });
+
+  it('найновіші зверху', () => {
+    expect(newestFirst([item('a', 1), item('c', 3), item('b', 2)]).map((r) => r.id)).toEqual(['c', 'b', 'a']);
+  });
+
+  it('понад ліміт видаляються найстаріші', () => {
+    expect(overflow([item('a', 1), item('b', 2), item('c', 3)], 2)).toEqual(['a']);
+    expect(overflow([item('a', 1)], 2)).toEqual([]);
+  });
+
+  it('запис читання вимкнений, доки дорослий його не ввімкне, і переживає перезавантаження', () => {
+    expect(createInitialState(TODAY).settings.recordReading).toBe(false);
+    const on = updateSettings(createInitialState(TODAY), { recordReading: true });
+    expect(normalizeState(JSON.parse(JSON.stringify(on)), TODAY).settings.recordReading).toBe(true);
+    expect(normalizeState({ ...on, settings: { recordReading: 'так' } }, TODAY).settings.recordReading).toBe(false);
   });
 });

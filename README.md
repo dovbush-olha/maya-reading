@@ -49,7 +49,8 @@ src/
     availability.ts  які місії відкриті, що рекомендувати, чи час нової букви
   components/exercises/  по компоненту на вид вправи
   screens/        Home, MissionPlayer, Parent
-  audio/          звуки натискань і дзвіночки (Web Audio), записи голосу дорослого (IndexedDB)
+  audio/          звуки натискань і дзвіночки (Web Audio); у IndexedDB - голос дорослого для звуків букв
+                  і записи, як дитина читала сама (дорослий слухає й відмічає в розділі для дорослих)
   store/          збереження в localStorage
 ```
 
