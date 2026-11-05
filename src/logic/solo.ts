@@ -40,14 +40,65 @@ export function adaptForSolo(ex: Exercise, hasSound: (l: LetterId) => boolean, r
   }
 }
 
+/**
+ * Наскільки слово-варіант схоже на правильне - менше значить схожіше.
+ * Найперше дитина вгадує за першою буквою, тому вона важить найбільше;
+ * далі - скільки букв різниться, і чи збігається остання буква.
+ */
+export function closeness(target: string, candidate: string): [number, number, number] {
+  const a = target.toLowerCase();
+  const b = candidate.toLowerCase();
+  return [a[0] === b[0] ? 0 : 1, editDistance(a, b), a.at(-1) === b.at(-1) ? 0 : 1];
+}
+
+function compareCloseness(x: readonly number[], y: readonly number[]): number {
+  for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return x[i] - y[i];
+  return 0;
+}
+
+/** Скільки букв треба замінити, додати чи прибрати, щоб з одного слова вийшло інше (Левенштейн). */
+function editDistance(a: string, b: string): number {
+  const x = [...a];
+  const y = [...b];
+  let prev = Array.from({ length: y.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= x.length; i++) {
+    const row = [i];
+    for (let j = 1; j <= y.length; j++) {
+      row[j] = Math.min(prev[j] + 1, row[j - 1] + 1, prev[j - 1] + (x[i - 1] === y[j - 1] ? 0 : 1));
+    }
+    prev = row;
+  }
+  return prev[y.length];
+}
+
+/**
+ * Зайві картинки називають слова, схожі на правильне (СОМ: 🐟, а поруч 🧃 сік і 🦉 сова),
+ * щоб відповідь не можна було вгадати за першою буквою - треба дочитати слово.
+ * Дитина бачить лише картинки зайвих слів, тож їхні букви можуть бути ще не вивчені,
+ * але картинки мусять бути однозначними.
+ */
 function toPickPicture(word: string, rng: Rng): Exercise | undefined {
   const target = getWord(word);
+  // У фразі картинка показує зміст, тож слово з самої фрази як зайвий варіант - пастка:
+  // «Мама мила» 🧽 поруч із 🧼 мило збиває того, хто прочитав правильно.
+  const phraseWords = isPhrase(target) ? word.toLowerCase().split(' ') : [];
   const pool = ALL_WORDS.filter(
-    (w) => w.text !== word && w.clear && !isPhrase(w) && w.picture !== target.picture && !PEOPLE.test(w.picture),
+    (w) =>
+      w.text !== word &&
+      w.clear &&
+      !isPhrase(w) &&
+      w.picture !== target.picture &&
+      !PEOPLE.test(w.picture) &&
+      !phraseWords.some((p) => editDistance(p, w.text.toLowerCase()) <= 1),
   );
+  // Перемішування перед стабільним сортуванням: рівно схожі слова щоразу обираються по-різному.
+  const ranked = shuffle(pool, rng)
+    .map((w) => ({ w, key: closeness(word, w.text) }))
+    .sort((p, q) => compareCloseness(p.key, q.key))
+    .map((p) => p.w);
   const seen = new Set<string>([target.picture]);
   const distractors: string[] = [];
-  for (const w of shuffle(pool, rng)) {
+  for (const w of ranked) {
     if (seen.has(w.picture)) continue;
     seen.add(w.picture);
     distractors.push(w.text);

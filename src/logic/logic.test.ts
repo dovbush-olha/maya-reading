@@ -5,7 +5,8 @@ import { validateExercise } from '../content/validate';
 import { WEEK_1_MISSIONS } from '../content/week1';
 import { adviseNextLetter, missionAvailability, recommend } from './availability';
 import { buildPracticeMission, makeRng, warmUp } from './generate';
-import { adaptForSolo, preferRecordedVoice } from './solo';
+import { adaptForSolo, closeness, preferRecordedVoice } from './solo';
+import { ALL_WORDS, getWord, isPhrase } from '../content/words';
 import {
   applyExerciseResult,
   completeMission,
@@ -173,6 +174,47 @@ describe('режим «сама»', () => {
         }
       });
     }
+  });
+
+  it('зайві картинки називають схожі слова, щоб не вгадати за першою буквою', () => {
+    const out = adaptForSolo({ kind: 'read-word', word: 'сом' }, never, makeRng('a'));
+    if (out.kind !== 'pick-picture') throw new Error(out.kind);
+    expect(out.options).toHaveLength(3);
+    for (const o of out.options) expect(o[0]).toBe('с');
+  });
+
+  it('якщо є хоча б два схожі за першою буквою слова - обидва зайві варіанти на ту саму букву', () => {
+    for (const m of WEEK_1_MISSIONS) {
+      m.exercises.forEach((ex, i) => {
+        const out = adaptForSolo(ex, never, makeRng(`${m.id}-${i}`));
+        if (out.kind !== 'pick-picture') return;
+        const first = out.word[0].toLowerCase();
+        const target = getWord(out.word);
+        const sameFirst = new Set(
+          ALL_WORDS.filter((w) => w.clear && !isPhrase(w) && w.text !== out.word && w.picture !== target.picture && w.text[0].toLowerCase() === first)
+            .map((w) => w.picture),
+        );
+        if (sameFirst.size < 2) return;
+        for (const o of out.options) expect(o[0].toLowerCase(), `${m.id} ${out.word}: ${out.options.join(', ')}`).toBe(first);
+      });
+    }
+  });
+
+  it('у фразі зайвий варіант не схожий на її слова', () => {
+    for (const word of ['Мама мила', 'Лис у лісі']) {
+      for (let seed = 0; seed < 20; seed++) {
+        const out = adaptForSolo({ kind: 'read-word', word }, never, makeRng(`${word}-${seed}`));
+        if (out.kind !== 'pick-picture') throw new Error(out.kind);
+        expect(out.options, word).not.toContain('мило');
+        expect(out.options, word).not.toContain('ліс');
+      }
+    }
+  });
+
+  it('схожість: перша буква важливіша за решту слова', () => {
+    expect(closeness('сом', 'сік')).toEqual([0, 2, 1]);
+    expect(closeness('сом', 'дім')).toEqual([1, 2, 0]);
+    expect(closeness('Мама', 'мама')).toEqual([0, 0, 0]);
   });
 
   it('звук без запису стає пошуком букви за зразком', () => {
