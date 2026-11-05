@@ -550,6 +550,7 @@ function SettingsTab() {
           Почати спочатку (стерти прогрес)
         </button>
       </section>
+      <p className="app-version">Версія {__APP_VERSION__} · {formatWhen(__BUILD_DATE__)}</p>
       {confirmReset && (
         <Modal
           title="Стерти весь прогрес?"

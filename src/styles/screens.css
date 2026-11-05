@@ -1241,3 +1241,14 @@
   background: var(--berry);
   box-shadow: 0 0 0 3px var(--paper);
 }
+
+.app-version {
+  margin: -6px 0 0;
+  text-align: center;
+  color: var(--ink-faint);
+  font-size: 0.85rem;
+}
+
+:root[data-theme='night'] .app-version {
+  color: rgba(243, 236, 255, 0.6);
+}
