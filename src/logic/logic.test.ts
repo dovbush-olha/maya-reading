@@ -5,7 +5,7 @@ import { validateExercise } from '../content/validate';
 import { WEEK_1_MISSIONS } from '../content/week1';
 import { adviseNextLetter, missionAvailability, recommend } from './availability';
 import { buildPracticeMission, makeRng, warmUp } from './generate';
-import { adaptForSolo, closeness, preferRecordedVoice } from './solo';
+import { adaptForSolo, canPickPicture, closeness, preferRecordedVoice } from './solo';
 import { ALL_WORDS, getWord, isPhrase } from '../content/words';
 import {
   applyExerciseResult,
@@ -169,11 +169,25 @@ describe('режим «сама»', () => {
       m.exercises.forEach((ex, i) => {
         const out = adaptForSolo(ex, never, makeRng(`${m.id}-${i}`));
         if (ex.kind === 'read-word') {
-          expect(out.kind, `${m.id} ${ex.word}`).toBe('pick-picture');
+          expect(out.kind, `${m.id} ${ex.word}`).toBe(canPickPicture(getWord(ex.word)) ? 'pick-picture' : 'read-word');
           expect(validateExercise(out, m.requires), JSON.stringify(out)).toEqual([]);
         }
       });
     }
+  });
+
+  it('людей і картинки, яких не впізнати за текстом, не вгадують - лишається просте читання', () => {
+    for (const word of ['Алла', 'Ніна', 'мамо', 'Ми малі', 'Ніна мала', 'у Олі', 'мамі', 'мале']) {
+      expect(adaptForSolo({ kind: 'read-word', word }, never, makeRng(word)).kind, word).toBe('read-word');
+    }
+    expect(adaptForSolo({ kind: 'read-word', word: 'сом' }, never, makeRng('a')).kind).toBe('pick-picture');
+  });
+
+  it('у вибір картинки потрапляють лише слова, які видно з картинки', () => {
+    const pickable = ALL_WORDS.filter(canPickPicture).map((w) => w.text);
+    expect(pickable).toContain('лама');
+    expect(pickable).not.toContain('Олена');
+    expect(pickable).not.toContain('у мами');
   });
 
   it('зайві картинки називають схожі слова, щоб не вгадати за першою буквою', () => {
@@ -225,7 +239,8 @@ describe('режим «сама»', () => {
 
   it('скласти слово сама - лише за однозначною картинкою', () => {
     expect(adaptForSolo({ kind: 'build-word', word: 'мило', distractors: ['ла'] }, never, makeRng('a')).kind).toBe('build-word');
-    expect(adaptForSolo({ kind: 'build-word', word: 'Алла', distractors: ['ло'] }, never, makeRng('a')).kind).toBe('pick-picture');
+    expect(adaptForSolo({ kind: 'build-word', word: 'сом', distractors: ['са'] }, never, makeRng('a')).kind).toBe('pick-picture');
+    expect(adaptForSolo({ kind: 'build-word', word: 'Алла', distractors: ['ло'] }, never, makeRng('a'))).toEqual({ kind: 'read-word', word: 'Алла' });
   });
 });
 

@@ -1,5 +1,5 @@
 import type { LetterId } from '../content/alphabet';
-import type { Exercise } from '../content/types';
+import type { Exercise, WordEntry } from '../content/types';
 import { ALL_WORDS, getWord, isPhrase } from '../content/words';
 import { shuffle, type Rng } from './generate';
 
@@ -29,15 +29,25 @@ export function adaptForSolo(ex: Exercise, hasSound: (l: LetterId) => boolean, r
       // Без запису голосу звук ніхто не вимовить - шукаємо букву за зразком.
       return hasSound(ex.target) ? ex : { kind: 'find-letter', target: ex.target, options: ex.options, letterCase: ex.letterCase };
     case 'read-word':
+      // Якщо картинку не впізнати за текстом, лишаємо просте «прочитай»: воно не пише читання в журнал.
       return toPickPicture(ex.word, rng) ?? ex;
     case 'build-word': {
       // Складати за картинкою можна лише коли картинка однозначна; інакше - читаємо й обираємо картинку.
       if (getWord(ex.word).clear) return ex;
-      return toPickPicture(ex.word, rng) ?? ex;
+      return toPickPicture(ex.word, rng) ?? { kind: 'read-word', word: ex.word };
     }
     default:
       return ex;
   }
+}
+
+/**
+ * Чи доводить вибір картинки, що слово прочитане.
+ * Ні, якщо на картинці людина: зайві варіанти без людей, тож її вибирають, не читаючи
+ * («Алла» 👩 серед 🧼 і 🦙). І ні, якщо картинку за текстом не впізнати («у Олі» 🎀).
+ */
+export function canPickPicture(entry: WordEntry): boolean {
+  return entry.pickable !== false && !PEOPLE.test(entry.picture);
 }
 
 /**
@@ -79,6 +89,7 @@ function editDistance(a: string, b: string): number {
  */
 function toPickPicture(word: string, rng: Rng): Exercise | undefined {
   const target = getWord(word);
+  if (!canPickPicture(target)) return undefined;
   // У фразі картинка показує зміст, тож слово з самої фрази як зайвий варіант - пастка:
   // «Мама мила» 🧽 поруч із 🧼 мило збиває того, хто прочитав правильно.
   const phraseWords = isPhrase(target) ? word.toLowerCase().split(' ') : [];
