@@ -1,8 +1,15 @@
-const Pine = ({ x, y, s, c }: { x: number; y: number; s: number; c: string }) => (
+/**
+ * `far` - далека ялинка: без стовбура, крона стоїть просто на пагорбі.
+ * На телефоні картка з вправою часто закриває крони далекого ряду,
+ * і темний стовбур під нею стирчав би окремою паличкою.
+ */
+const Pine = ({ x, y, s, c, far = false }: { x: number; y: number; s: number; c: string; far?: boolean }) => (
   <g transform={`translate(${x} ${y}) scale(${s})`}>
-    <rect x="-4" y="-6" width="8" height="18" rx="3" fill="#8A6A55" />
-    <path d="M0 -92 C14 -70 30 -48 34 -30 C36 -18 24 -8 0 -8 C-24 -8 -36 -18 -34 -30 C-30 -48 -14 -70 0 -92 Z" fill={c} />
-    <path d="M0 -92 C10 -74 20 -58 24 -44 C14 -40 6 -42 0 -48 Z" fill="#fff" opacity="0.12" />
+    {!far && <rect x="-4" y="-6" width="8" height="18" rx="3" fill="#8A6A55" />}
+    <g transform={far ? 'translate(0 14)' : undefined}>
+      <path d="M0 -92 C14 -70 30 -48 34 -30 C36 -18 24 -8 0 -8 C-24 -8 -36 -18 -34 -30 C-30 -48 -14 -70 0 -92 Z" fill={c} />
+      <path d="M0 -92 C10 -74 20 -58 24 -44 C14 -40 6 -42 0 -48 Z" fill="#fff" opacity="0.12" />
+    </g>
   </g>
 );
 
@@ -121,7 +128,7 @@ export function ForestBackground({ night = false }: { night?: boolean }) {
 
         <path d="M0 560 C200 470 380 520 560 480 C760 436 940 520 1140 470 C1280 436 1380 470 1440 460 L1440 900 L0 900 Z" fill={c.far} />
         {[60, 170, 300, 470, 640, 820, 990, 1130, 1290, 1400].map((x, i) => (
-          <Pine key={x} x={x} y={560 - (i % 3) * 18} s={0.75 + (i % 2) * 0.15} c={c.farTree} />
+          <Pine key={x} x={x} y={560 - (i % 3) * 18} s={0.75 + (i % 2) * 0.15} c={c.farTree} far />
         ))}
 
         <path d="M0 650 C220 590 420 640 640 610 C860 580 1060 650 1260 610 C1350 594 1410 600 1440 604 L1440 900 L0 900 Z" fill={c.mid} />
