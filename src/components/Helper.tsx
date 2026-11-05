@@ -13,7 +13,9 @@ interface Palette {
   nose: string;
 }
 
-const PALETTES: Record<HelperId, Palette> = {
+type AnimalId = Exclude<HelperId, 'flower' | 'butterfly'>;
+
+const PALETTES: Record<AnimalId, Palette> = {
   fox: { fur: ['#F7A462', '#EC7F3C'], dark: '#E3702F', light: '#FFF8EE', feet: '#5B4152', inner: '#5B4152', scarf: ['#6FAE6A', '#5A9A57'], nose: '#3E3350' },
   bunny: { fur: ['#F6F1F8', '#E4DAEE'], dark: '#D3C5E2', light: '#FFFFFF', feet: '#D3C5E2', inner: '#F7B6C8', scarf: ['#F08A4B', '#D9733A'], nose: '#F48FA0' },
   bear: { fur: ['#C89466', '#A9744B'], dark: '#94633E', light: '#F3DDC2', feet: '#7A5233', inner: '#E8C3A0', scarf: ['#7EC4CF', '#5FAAB6'], nose: '#4A3428' },
@@ -24,7 +26,7 @@ const PALETTES: Record<HelperId, Palette> = {
 const ROUND_HEAD = 'M38 88 C38 52 64 38 100 38 C136 38 162 52 162 88 C162 120 134 134 100 134 C66 134 38 120 38 88 Z';
 const FOX_HEAD = 'M36 86 C36 50 64 36 100 36 C136 36 164 50 164 86 C164 118 134 132 100 132 C66 132 36 118 36 86 Z';
 
-function Ears({ id, p }: { id: HelperId; p: Palette }) {
+function Ears({ id, p }: { id: AnimalId; p: Palette }) {
   const fur = `url(#hf-${id})`;
   switch (id) {
     case 'fox':
@@ -89,7 +91,7 @@ function Ears({ id, p }: { id: HelperId; p: Palette }) {
   }
 }
 
-function Tail({ id, p }: { id: HelperId; p: Palette }) {
+function Tail({ id, p }: { id: AnimalId; p: Palette }) {
   switch (id) {
     case 'fox':
       return (
@@ -113,7 +115,7 @@ function Tail({ id, p }: { id: HelperId; p: Palette }) {
   }
 }
 
-function Face({ id, p }: { id: HelperId; p: Palette }) {
+function Face({ id, p }: { id: AnimalId; p: Palette }) {
   switch (id) {
     case 'fox':
       return (
@@ -136,7 +138,7 @@ function Face({ id, p }: { id: HelperId; p: Palette }) {
   }
 }
 
-function Nose({ id, p }: { id: HelperId; p: Palette }) {
+function Nose({ id, p }: { id: AnimalId; p: Palette }) {
   switch (id) {
     case 'owl':
       return <path d="M92 98 Q100 94 108 98 L100 114 Z" fill={p.nose} strokeLinejoin="round" />;
@@ -150,7 +152,7 @@ function Nose({ id, p }: { id: HelperId; p: Palette }) {
   }
 }
 
-function Extras({ id, p }: { id: HelperId; p: Palette }) {
+function Extras({ id, p }: { id: AnimalId; p: Palette }) {
   switch (id) {
     case 'cat':
       return (
@@ -172,7 +174,7 @@ function Extras({ id, p }: { id: HelperId; p: Palette }) {
   }
 }
 
-function Arms({ id, p }: { id: HelperId; p: Palette }) {
+function Arms({ id, p }: { id: AnimalId; p: Palette }) {
   if (id === 'owl') {
     return (
       <g className="helper__paws">
@@ -196,11 +198,8 @@ interface HelperProps {
   className?: string;
 }
 
-/** Звір-помічник. Намальований вручну у SVG, анімації - у CSS. */
+/** Друг-помічник. Намальований вручну у SVG, анімації - у CSS. */
 export function Helper({ id, mood = 'idle', size = 160, className = '' }: HelperProps): ReactNode {
-  const p = PALETTES[id];
-  const closedEyes = mood === 'happy' || mood === 'cheer';
-  const owl = id === 'owl';
   return (
     <svg
       className={`helper helper--${mood} helper--${id} ${className}`}
@@ -210,6 +209,51 @@ export function Helper({ id, mood = 'idle', size = 160, className = '' }: Helper
       role="img"
       aria-label={helperName(id)}
     >
+      <ellipse cx="100" cy="210" rx="62" ry="7" fill="#3E3350" opacity="0.12" />
+      {id === 'flower' ? <Flower mood={mood} /> : id === 'butterfly' ? <Butterfly mood={mood} /> : <Animal id={id} mood={mood} />}
+    </svg>
+  );
+}
+
+/** Очі, рум’янець і усмішка - спільні для всіх друзів. */
+function Expression({ mood, bigEyes = false, mouth = true }: { mood: HelperMood; bigEyes?: boolean; mouth?: boolean }) {
+  const closedEyes = mood === 'happy' || mood === 'cheer';
+  return (
+    <>
+      <ellipse cx="62" cy="104" rx="9" ry="5.5" fill="#F48FA0" opacity="0.5" />
+      <ellipse cx="138" cy="104" rx="9" ry="5.5" fill="#F48FA0" opacity="0.5" />
+      {closedEyes ? (
+        <g fill="none" stroke="#3E3350" strokeWidth="5" strokeLinecap="round">
+          <path d="M68 86 Q78 76 88 86" />
+          <path d="M112 86 Q122 76 132 86" />
+        </g>
+      ) : (
+        <g className={`helper__eyes ${mood === 'thinking' ? 'helper__eyes--side' : ''}`}>
+          <ellipse cx="78" cy="84" rx={bigEyes ? 10 : 8} ry={bigEyes ? 11 : 10} fill="#3E3350" />
+          <ellipse cx="122" cy="84" rx={bigEyes ? 10 : 8} ry={bigEyes ? 11 : 10} fill="#3E3350" />
+          <circle cx="81" cy="80" r="3.4" fill="#fff" />
+          <circle cx="125" cy="80" r="3.4" fill="#fff" />
+          <circle cx="75.5" cy="88" r="1.4" fill="#fff" opacity="0.8" />
+          <circle cx="119.5" cy="88" r="1.4" fill="#fff" opacity="0.8" />
+        </g>
+      )}
+      {mouth &&
+        (mood === 'cheer' ? (
+          <path d="M90 112 Q100 126 110 112 Z" fill="#C2456A" stroke="#3E3350" strokeWidth="2.5" strokeLinejoin="round" />
+        ) : mood === 'thinking' ? (
+          <path d="M94 115 Q100 113 106 115" fill="none" stroke="#3E3350" strokeWidth="3" strokeLinecap="round" />
+        ) : (
+          <path d="M91 112 Q100 120 109 112" fill="none" stroke="#3E3350" strokeWidth="3" strokeLinecap="round" />
+        ))}
+    </>
+  );
+}
+
+function Animal({ id, mood }: { id: AnimalId; mood: HelperMood }) {
+  const p = PALETTES[id];
+  const owl = id === 'owl';
+  return (
+    <>
       <defs>
         <linearGradient id={`hf-${id}`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor={p.fur[0]} />
@@ -217,7 +261,6 @@ export function Helper({ id, mood = 'idle', size = 160, className = '' }: Helper
         </linearGradient>
       </defs>
 
-      <ellipse cx="100" cy="210" rx="62" ry="7" fill="#3E3350" opacity="0.12" />
       <Tail id={id} p={p} />
 
       <g className="helper__body">
@@ -241,36 +284,100 @@ export function Helper({ id, mood = 'idle', size = 160, className = '' }: Helper
         <Ears id={id} p={p} />
         <path d={id === 'fox' ? FOX_HEAD : ROUND_HEAD} fill={`url(#hf-${id})`} />
         <Face id={id} p={p} />
-        <ellipse cx="62" cy="104" rx="9" ry="5.5" fill="#F48FA0" opacity="0.5" />
-        <ellipse cx="138" cy="104" rx="9" ry="5.5" fill="#F48FA0" opacity="0.5" />
-
-        {closedEyes ? (
-          <g fill="none" stroke="#3E3350" strokeWidth="5" strokeLinecap="round">
-            <path d="M68 86 Q78 76 88 86" />
-            <path d="M112 86 Q122 76 132 86" />
-          </g>
-        ) : (
-          <g className={`helper__eyes ${mood === 'thinking' ? 'helper__eyes--side' : ''}`}>
-            <ellipse cx="78" cy="84" rx={owl ? 10 : 8} ry={owl ? 11 : 10} fill="#3E3350" />
-            <ellipse cx="122" cy="84" rx={owl ? 10 : 8} ry={owl ? 11 : 10} fill="#3E3350" />
-            <circle cx="81" cy="80" r="3.4" fill="#fff" />
-            <circle cx="125" cy="80" r="3.4" fill="#fff" />
-            <circle cx="75.5" cy="88" r="1.4" fill="#fff" opacity="0.8" />
-            <circle cx="119.5" cy="88" r="1.4" fill="#fff" opacity="0.8" />
-          </g>
-        )}
-
+        <Expression mood={mood} bigEyes={owl} mouth={!owl} />
         <Nose id={id} p={p} />
         {id !== 'owl' && id !== 'fox' && id !== 'bear' && <Extras id={id} p={p} />}
-        {!owl &&
-          (mood === 'cheer' ? (
-            <path d="M90 112 Q100 126 110 112 Z" fill="#C2456A" stroke="#3E3350" strokeWidth="2.5" strokeLinejoin="round" />
-          ) : mood === 'thinking' ? (
-            <path d="M94 115 Q100 113 106 115" fill="none" stroke="#3E3350" strokeWidth="3" strokeLinecap="round" />
-          ) : (
-            <path d="M91 112 Q100 120 109 112" fill="none" stroke="#3E3350" strokeWidth="3" strokeLinecap="round" />
-          ))}
       </g>
-    </svg>
+    </>
+  );
+}
+
+const PETALS = [0, 45, 90, 135, 180, 225, 270, 315];
+
+/** Квіточка: пелюстки навколо усміхненого личка, стебло з листочками. */
+function Flower({ mood }: { mood: HelperMood }) {
+  return (
+    <>
+      <defs>
+        <radialGradient id="hf-flower-center" cx="0.45" cy="0.38" r="0.7">
+          <stop offset="0" stopColor="#FFE58A" />
+          <stop offset="1" stopColor="#F6BC45" />
+        </radialGradient>
+      </defs>
+
+      <ellipse cx="100" cy="206" rx="46" ry="9" fill="#7FBF6E" />
+      <path d="M100 130 C96 160 104 184 100 206" fill="none" stroke="#5A9A57" strokeWidth="9" strokeLinecap="round" />
+      <g className="helper__paws">
+        <path className="helper__leaf helper__leaf--left" d="M99 182 C82 164 58 166 48 178 C62 194 86 194 99 182 Z" fill="#6FAE6A" />
+        <path className="helper__leaf" d="M101 164 C118 146 142 148 152 160 C138 176 114 176 101 164 Z" fill="#6FAE6A" />
+        <path d="M99 182 C82 178 66 178 54 179 M101 164 C118 160 134 160 146 161" fill="none" stroke="#5A9A57" strokeWidth="2" strokeLinecap="round" />
+      </g>
+
+      <g className="helper__head">
+        <g className="helper__petals">
+          {PETALS.map((a, i) => (
+            <ellipse key={a} cx="100" cy="42" rx="22" ry="30" fill={i % 2 ? '#F49CBF' : '#F7B6D0'} transform={`rotate(${a} 100 90)`} />
+          ))}
+        </g>
+        <circle cx="100" cy="90" r="47" fill="url(#hf-flower-center)" />
+        <circle cx="100" cy="90" r="47" fill="none" stroke="#EAA93A" strokeWidth="2" opacity="0.5" />
+        <Expression mood={mood} />
+      </g>
+    </>
+  );
+}
+
+/** Метелик: велика голівка з вусиками, смугасте тільце і крильця, що махають. */
+function Butterfly({ mood }: { mood: HelperMood }) {
+  const wing = (
+    <>
+      <path d="M100 134 C74 76 10 64 8 112 C6 156 62 166 100 150 Z" fill="url(#hf-wing-top)" />
+      <path d="M100 154 C70 152 30 166 38 194 C46 218 86 202 100 168 Z" fill="url(#hf-wing-bottom)" />
+      <circle cx="40" cy="114" r="13" fill="#FFF3C9" opacity="0.9" />
+      <circle cx="64" cy="98" r="6" fill="#FFF3C9" opacity="0.8" />
+      <circle cx="60" cy="186" r="8" fill="#FFF3C9" opacity="0.85" />
+    </>
+  );
+  return (
+    <>
+      <defs>
+        <linearGradient id="hf-wing-top" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#9FD8E4" />
+          <stop offset="1" stopColor="#5FAAB6" />
+        </linearGradient>
+        <linearGradient id="hf-wing-bottom" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#C9B6E4" />
+          <stop offset="1" stopColor="#A994CC" />
+        </linearGradient>
+        <linearGradient id="hf-butterfly" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#8E78B8" />
+          <stop offset="1" stopColor="#6E5A98" />
+        </linearGradient>
+      </defs>
+
+      <g className="helper__wings">
+        {wing}
+        <g transform="matrix(-1 0 0 1 200 0)">{wing}</g>
+      </g>
+
+      <g className="helper__body">
+        <ellipse cx="100" cy="166" rx="20" ry="40" fill="url(#hf-butterfly)" />
+        <g fill="none" stroke="#FFE58A" strokeWidth="5" strokeLinecap="round" opacity="0.9">
+          <path d="M84 158 Q100 164 116 158 M85 174 Q100 180 115 174 M89 190 Q100 195 111 190" />
+        </g>
+      </g>
+
+      <g className="helper__head">
+        <g fill="none" stroke="#6E5A98" strokeWidth="4" strokeLinecap="round">
+          <path className="helper__ear helper__ear--left" d="M86 50 C80 30 70 18 58 14" />
+          <path className="helper__ear" d="M114 50 C120 30 130 18 142 14" />
+        </g>
+        <circle cx="57" cy="13" r="7" fill="#F49CBF" />
+        <circle cx="143" cy="13" r="7" fill="#F49CBF" />
+        <circle cx="100" cy="88" r="46" fill="url(#hf-butterfly)" />
+        <ellipse cx="100" cy="98" rx="36" ry="30" fill="#B7A6DA" opacity="0.55" />
+        <Expression mood={mood} />
+      </g>
+    </>
   );
 }

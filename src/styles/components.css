@@ -1,4 +1,4 @@
-/* ---------- Лисичка ---------- */
+/* ---------- Друзі-помічники ---------- */
 
 .helper {
   display: block;
@@ -44,10 +44,69 @@
   transition: transform 0.3s;
 }
 
+.helper--flower.helper--cheer .helper__paws {
+  transform: none;
+}
+
 .helper--thinking .helper__head {
   animation: none;
   transform: rotate(-7deg);
   transition: transform 0.4s;
+}
+
+.helper__wings {
+  transform-origin: 100px 150px;
+  animation: helper-flap 1.6s ease-in-out infinite;
+}
+
+.helper--cheer .helper__wings {
+  animation-duration: 0.45s;
+}
+
+.helper__leaf {
+  transform-box: fill-box;
+  transform-origin: left center;
+  animation: helper-leaf 4s ease-in-out infinite;
+}
+
+.helper__leaf--left {
+  transform-origin: right center;
+  animation-delay: -2s;
+}
+
+.helper--flower .helper__head {
+  transform-origin: 100px 136px;
+}
+
+.helper--cheer .helper__petals {
+  transform-origin: 100px 90px;
+  animation: helper-spin 0.7s ease-out both;
+}
+
+@keyframes helper-flap {
+  0%,
+  100% {
+    transform: scaleX(1);
+  }
+  50% {
+    transform: scaleX(0.82);
+  }
+}
+
+@keyframes helper-leaf {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  50% {
+    transform: rotate(6deg);
+  }
+}
+
+@keyframes helper-spin {
+  to {
+    transform: rotate(45deg);
+  }
 }
 
 @keyframes helper-head {
