@@ -466,14 +466,35 @@
     font-size: 1.5rem;
   }
 
-  .map-mission {
-    width: 42px;
-    height: 42px;
+  /* Кожен день - окрема клітинка: камінець і дві місії під ним, без наїзду на сусідів. */
+  .map__days {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 8px;
+    row-gap: 18px;
   }
 
-  .map__days {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    column-gap: 4px;
+  .map-day {
+    min-width: 0;
+    gap: 6px;
+  }
+
+  .map-day__missions {
+    gap: 6px;
+  }
+
+  .map-mission {
+    width: clamp(34px, 10.5vw, 42px);
+    height: clamp(34px, 10.5vw, 42px);
+    font-size: 1.05rem;
+  }
+
+  .map-day__waiting {
+    text-align: center;
+    line-height: 1.25;
+  }
+
+  .map-day:last-child:nth-child(3n + 1) {
+    grid-column: 2;
   }
 
   .map-day:nth-child(even) {
@@ -610,6 +631,35 @@
     gap: 8px;
   }
 
+  /* Складене слово - одним словом, без проміжків між складами. */
+  .word-slots--built {
+    gap: 0;
+    padding: 12px 18px;
+  }
+
+  .word-slots--built .word-reveal--inline {
+    margin-left: 12px;
+  }
+
+  /* Три картинки завжди в один рядок. */
+  .picture-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    width: 100%;
+  }
+
+  .picture-tile {
+    width: 100%;
+    font-size: clamp(2.6rem, 12vw, 3.6rem);
+  }
+
+  .big-button {
+    font-size: clamp(1.15rem, 5.4vw, 1.4rem);
+    white-space: nowrap;
+    gap: 10px;
+  }
+
   .match-grid {
     gap: 10px;
   }
@@ -658,6 +708,26 @@
 
   .big-button {
     padding: 0 28px;
+  }
+
+  /* Вкладки батьківського режиму - сіткою 2×2, щоб усі було видно. */
+  .tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+  }
+
+  .tabs__tab {
+    white-space: normal;
+    padding: 10px 8px;
+    font-size: 0.92rem;
+    line-height: 1.2;
+  }
+
+  .read-row__actions .chip {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 8px 6px;
   }
 
   .switch-row--choice {

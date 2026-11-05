@@ -271,7 +271,7 @@ function ReadingTab() {
             ⭐ Сама
           </button>
           <button type="button" className="chip" onClick={() => updateProgress((s) => logReading(s, text, false, todayISO()))}>
-            🤝 З допомогою
+            🤝 Разом
           </button>
         </span>
       </li>
