@@ -16,10 +16,11 @@ export function missingLetters(state: ProgressState, mission: Mission): LetterId
 
 export function missionAvailability(state: ProgressState, mission: Mission, missions = WEEK_1_MISSIONS): MissionAvailability {
   if (state.missions[mission.id]?.completions) return 'done';
-  if (missingLetters(state, mission).length) return 'needs-letters';
   const index = missions.findIndex((m) => m.id === mission.id);
   const prev = index > 0 ? missions[index - 1] : undefined;
   if (prev && !state.missions[prev.id]?.completions) return 'locked';
+  // Попередню пройдено, а букви немає: дорослий її сховав, і відкрити її може лише він.
+  if (missingLetters(state, mission).length) return 'needs-letters';
   return 'available';
 }
 
@@ -48,7 +49,11 @@ export interface UnlockAdvice {
   message: string;
 }
 
-/** Порада дорослому: чи час відкривати наступну букву з плану. Сама програма букви не відкриває. */
+/**
+ * Порада дорослому щодо наступної букви з плану.
+ * Зазвичай вона відкривається сама після попереднього дня (див. autoUnlockLetters);
+ * порада про готовність потрібна, коли дорослий букву сховав.
+ */
 export function adviseNextLetter(state: ProgressState, missions = WEEK_1_MISSIONS): UnlockAdvice | undefined {
   const letter = PLANNED_LETTERS.find((l) => !state.unlocked.includes(l));
   if (!letter) return undefined;
@@ -60,7 +65,7 @@ export function adviseNextLetter(state: ProgressState, missions = WEEK_1_MISSION
     return {
       letter,
       ready: false,
-      message: `Спершу варто пройти доступні місії (залишилось ${pending.length}). Букву ${letter} можна відкрити й зараз, якщо в школі її вже вчили.`,
+      message: `Буква ${letter} відкриється сама, коли Майя пройде доступні місії (залишилось ${pending.length}). Якщо в школі її вже вчили, можна відкрити й зараз.`,
     };
   }
 

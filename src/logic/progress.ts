@@ -1,5 +1,7 @@
-import { BASE_LETTERS, UKRAINIAN_ALPHABET, isLetterId, type LetterId } from '../content/alphabet';
+import { BASE_LETTERS, PLANNED_LETTERS, UKRAINIAN_ALPHABET, isLetterId, type LetterId } from '../content/alphabet';
 import { isHelperId, type HelperId } from '../content/helpers';
+import type { Mission } from '../content/types';
+import { WEEK_1_MISSIONS } from '../content/week1';
 import { nextReview, type ReviewItem } from './srs';
 
 export type LetterStatus = 'knows' | 'sometimes' | 'learning';
@@ -76,6 +78,11 @@ function normalizeSettings(raw: unknown): Settings {
 export interface ProgressState {
   version: 1;
   unlocked: LetterId[];
+  /**
+   * Букви з плану, які програма вже відкривала сама або які дорослий сховав.
+   * Їх програма сама більше не відкриває, щоб не перекрити рішення дорослого.
+   */
+  autoUnlocked: LetterId[];
   letters: Partial<Record<LetterId, LetterProgress>>;
   reading: Record<string, ReadingLog>;
   missions: Record<string, MissionRecord>;
@@ -124,6 +131,7 @@ export function createInitialState(today = todayISO()): ProgressState {
   return {
     version: 1,
     unlocked: [...BASE_LETTERS],
+    autoUnlocked: [],
     letters,
     reading: {},
     missions: {},
@@ -156,16 +164,21 @@ export function normalizeState(raw: unknown, today = todayISO()): ProgressState 
     }
   }
 
-  return {
-    version: 1,
-    unlocked: UKRAINIAN_ALPHABET.filter((l) => unlocked.has(l)),
-    letters,
-    reading: r.reading && typeof r.reading === 'object' ? r.reading : {},
-    missions: r.missions && typeof r.missions === 'object' ? r.missions : {},
-    stickers: Array.isArray(r.stickers) ? r.stickers : [],
-    stars: typeof r.stars === 'number' && r.stars >= 0 ? Math.floor(r.stars) : 0,
-    settings: normalizeSettings(r.settings),
-  };
+  // Прогрес, збережений до автоматичного відкриття букв, теж одразу доходить до наступного дня.
+  return autoUnlockLetters(
+    {
+      version: 1,
+      unlocked: UKRAINIAN_ALPHABET.filter((l) => unlocked.has(l)),
+      autoUnlocked: Array.isArray(r.autoUnlocked) ? r.autoUnlocked.filter(isLetterId) : [],
+      letters,
+      reading: r.reading && typeof r.reading === 'object' ? r.reading : {},
+      missions: r.missions && typeof r.missions === 'object' ? r.missions : {},
+      stickers: Array.isArray(r.stickers) ? r.stickers : [],
+      stars: typeof r.stars === 'number' && r.stars >= 0 ? Math.floor(r.stars) : 0,
+      settings: normalizeSettings(r.settings),
+    },
+    today,
+  );
 }
 
 function letterOf(state: ProgressState, id: LetterId, today: string): LetterProgress {
@@ -221,20 +234,37 @@ export interface MissionSummary {
 
 export function completeMission(state: ProgressState, s: MissionSummary, today = todayISO()): ProgressState {
   const prev = state.missions[s.missionId];
-  return {
-    ...state,
-    missions: {
-      ...state.missions,
-      [s.missionId]: {
-        completions: (prev?.completions ?? 0) + 1,
-        lastCompletedAt: today,
-        lastHintRate: s.scored ? s.hinted / s.scored : 0,
-        lastReadAlone: s.readAlone,
-        lastReadTotal: s.readTotal,
+  return autoUnlockLetters(
+    {
+      ...state,
+      missions: {
+        ...state.missions,
+        [s.missionId]: {
+          completions: (prev?.completions ?? 0) + 1,
+          lastCompletedAt: today,
+          lastHintRate: s.scored ? s.hinted / s.scored : 0,
+          lastReadAlone: s.readAlone,
+          lastReadTotal: s.readTotal,
+        },
       },
+      stickers: state.stickers.includes(s.sticker) ? state.stickers : [...state.stickers, s.sticker],
     },
-    stickers: state.stickers.includes(s.sticker) ? state.stickers : [...state.stickers, s.sticker],
-  };
+    today,
+  );
+}
+
+/**
+ * Коли всі місії до наступної пройдено, а їй бракує лише букви з плану (М, С, Н, К),
+ * програма відкриває цю букву сама. Букву, яку дорослий сховав, повторно не відкриває.
+ */
+export function autoUnlockLetters(state: ProgressState, today = todayISO(), missions: Mission[] = WEEK_1_MISSIONS): ProgressState {
+  const next = missions.find((m) => !state.missions[m.id]?.completions);
+  if (!next) return state;
+  const missing = next.requires.filter((l) => !state.unlocked.includes(l));
+  if (!missing.length || !missing.every((l) => PLANNED_LETTERS.includes(l) && !state.autoUnlocked.includes(l))) return state;
+  let s = state;
+  for (const l of missing) s = unlockLetter(s, l, today);
+  return { ...s, autoUnlocked: [...s.autoUnlocked, ...missing] };
 }
 
 export function setLetterStatus(state: ProgressState, id: LetterId, status: LetterStatus, today = todayISO()): ProgressState {
@@ -253,7 +283,11 @@ export function unlockLetter(state: ProgressState, id: LetterId, today = todayIS
 
 export function lockLetter(state: ProgressState, id: LetterId): ProgressState {
   if (BASE_LETTERS.includes(id)) return state;
-  return { ...state, unlocked: state.unlocked.filter((l) => l !== id) };
+  return {
+    ...state,
+    unlocked: state.unlocked.filter((l) => l !== id),
+    autoUnlocked: state.autoUnlocked.includes(id) ? state.autoUnlocked : [...state.autoUnlocked, id],
+  };
 }
 
 export function updateSettings(state: ProgressState, patch: Partial<Settings>): ProgressState {

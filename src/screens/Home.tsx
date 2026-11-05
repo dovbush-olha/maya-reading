@@ -122,7 +122,8 @@ export function Home({ onStart, onParent }: Props) {
           {WEEK_1.map((day) => {
             const states = day.missions.map((m) => missionAvailability(progress, m));
             const dayDone = states.every((s) => s === 'done');
-            const waiting = missingLetters(progress, day.missions[0]);
+            // Буква, яку сховав дорослий. Майбутні дні просто чекають своєї черги.
+            const waiting = states[0] === 'needs-letters' ? missingLetters(progress, day.missions[0]) : [];
             return (
               <li key={day.day} className={`map-day ${dayDone ? 'map-day--done' : ''}`}>
                 <span className="map-day__stone">

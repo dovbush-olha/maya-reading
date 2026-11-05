@@ -436,6 +436,20 @@
   }
 }
 
+.mission-done__new {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--ink);
+  background: var(--sun-pale);
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+}
+
+.mission-done__new .colored {
+  font-size: 1.5rem;
+  font-weight: 900;
+}
+
 .mission-done__adult {
   margin-top: 8px;
   font-size: 0.95rem;

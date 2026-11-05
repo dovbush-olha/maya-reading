@@ -8,7 +8,7 @@ import { ExerciseView } from '../components/exercises/ExerciseView';
 import type { HelperFeedback } from '../components/exercises/types';
 import { Helper } from '../components/Helper';
 import { plural } from '../components/text';
-import { Confetti } from '../components/ui';
+import { ColoredText, Confetti } from '../components/ui';
 import { makeRng, prepareExercise, warmUp } from '../logic/generate';
 import { applyExerciseResult, completeMission, todayISO, type ExerciseResult, type MissionSummary } from '../logic/progress';
 import { adaptForSolo, preferRecordedVoice } from '../logic/solo';
@@ -47,6 +47,8 @@ export function MissionPlayer({ mission, onExit, onRepeat }: Props) {
   const [results, setResults] = useState<ExerciseResult[]>([]);
   const [feedback, setFeedback] = useState<HelperFeedback | null>(null);
   const [summary, setSummary] = useState<MissionSummary | null>(null);
+  /** Букви, які відкрилися самі, бо цією місією пройдено попередній день. */
+  const [opened, setOpened] = useState<LetterId[]>([]);
 
   const current = exercises[index];
   const completed = results.length > index;
@@ -77,7 +79,9 @@ export function MissionPlayer({ mission, onExit, onRepeat }: Props) {
       readTotal: reading.length,
     };
     setSummary(s);
+    const before = getProgress().unlocked;
     updateProgress((st) => completeMission(st, s, todayISO()));
+    setOpened(getProgress().unlocked.filter((l) => !before.includes(l)));
     setPhase('done');
     fanfare();
   };
@@ -122,6 +126,12 @@ export function MissionPlayer({ mission, onExit, onRepeat }: Props) {
           </div>
           <h1 className="mission-done__title">Ура! Місію пройдено!</h1>
           <p className="mission-done__text">+{results.length} ⭐ і новий лісовий друг в альбомі!</p>
+          {opened.length > 0 && (
+            <p className="mission-done__new">
+              <span aria-hidden="true">🔓</span> Відкрилася нова стежка з {plural(opened.length, 'буквою', 'буквами', 'буквами')}{' '}
+              <ColoredText text={opened.join(', ')} />!
+            </p>
+          )}
           <button type="button" className="big-button" onClick={onExit}>
             До лісової мапи <span aria-hidden="true">🗺️</span>
           </button>

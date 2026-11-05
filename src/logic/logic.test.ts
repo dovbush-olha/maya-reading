@@ -12,6 +12,7 @@ import {
   applyExerciseResult,
   completeMission,
   createInitialState,
+  lockLetter,
   normalizeState,
   unlockLetter,
   updateSettings,
@@ -87,17 +88,60 @@ describe('доступність місій', () => {
 
   const FIRST_THREE_DAYS = ['w1d1m1', 'w1d1m2', 'w1d2m1', 'w1d2m2', 'w1d3m1', 'w1d3m2'];
 
-  it('три дні з Л доступні одразу, а день 4 чекає букву М', () => {
+  it('три дні з Л доступні одразу, а М відкривається сама після третього дня', () => {
     let s = createInitialState(TODAY);
+    const day4 = WEEK_1_MISSIONS.find((m) => m.id === 'w1d4m1')!;
     for (const id of FIRST_THREE_DAYS) {
       expect(missionAvailability(s, WEEK_1_MISSIONS.find((m) => m.id === id)!)).toBe('available');
+      expect(missionAvailability(s, day4)).toBe('locked');
+      expect(s.unlocked).not.toContain('М');
       s = complete(s, id);
     }
+    expect(s.unlocked).toContain('М');
+    expect(s.letters.М).toMatchObject({ status: 'learning', box: 1, due: TODAY });
+    expect(missionAvailability(s, day4)).toBe('available');
+    expect(recommend(s)).toMatchObject({ kind: 'mission', mission: { id: 'w1d4m1' } });
+  });
+
+  it('після кожного дня відкривається наступна буква плану', () => {
+    let s = createInitialState(TODAY);
+    for (const m of WEEK_1_MISSIONS) {
+      expect(missionAvailability(s, m)).toBe('available');
+      s = complete(s, m.id);
+    }
+    expect(s.unlocked).toEqual(expect.arrayContaining(['М', 'С', 'Н', 'К']));
+    expect(recommend(s)).toMatchObject({ kind: 'practice', reason: 'week-done' });
+  });
+
+  it('прогрес, збережений до автовідкриття, після завантаження одразу веде в день 4', () => {
+    let s = createInitialState(TODAY);
+    for (const id of FIRST_THREE_DAYS) s = complete(s, id);
+    const old = JSON.parse(JSON.stringify({ ...s, unlocked: s.unlocked.filter((l) => l !== 'М'), autoUnlocked: undefined }));
+    const loaded = normalizeState(old, TODAY);
+    expect(loaded.unlocked).toContain('М');
+    expect(recommend(loaded)).toMatchObject({ kind: 'mission', mission: { id: 'w1d4m1' } });
+  });
+
+  it('букву, яку сховав дорослий, гра сама вже не відкриває', () => {
+    let s = createInitialState(TODAY);
+    for (const id of FIRST_THREE_DAYS) s = complete(s, id);
+    s = lockLetter(s, 'М');
     const day4 = WEEK_1_MISSIONS.find((m) => m.id === 'w1d4m1')!;
     expect(missionAvailability(s, day4)).toBe('needs-letters');
+    s = complete(s, 'w1d3m2');
+    s = normalizeState(JSON.parse(JSON.stringify(s)), TODAY);
+    expect(s.unlocked).not.toContain('М');
     expect(recommend(s)).toMatchObject({ kind: 'practice', reason: 'needs-letters', letters: ['М'] });
     s = unlockLetter(s, 'М', TODAY);
     expect(missionAvailability(s, day4)).toBe('available');
+  });
+
+  it('не відкриває букву, поки не пройдено всі попередні місії', () => {
+    let s = createInitialState(TODAY);
+    for (const id of FIRST_THREE_DAYS.filter((id) => id !== 'w1d2m1')) s = complete(s, id);
+    expect(s.unlocked).not.toContain('М');
+    s = complete(s, 'w1d2m1');
+    expect(s.unlocked).toContain('М');
   });
 
   it('радить повторити місію, якщо було багато підказок, але не безкінечно', () => {
@@ -109,11 +153,15 @@ describe('доступність місій', () => {
     expect(r.kind === 'mission' && r.mission.id).toBe('w1d1m2');
   });
 
-  it('ніколи не відкриває букви сама, лише радить', () => {
+  it('радить про сховану букву лише тоді, коли доступні місії пройдено', () => {
     let s = createInitialState(TODAY);
+    for (const id of FIRST_THREE_DAYS.slice(0, 2)) s = complete(s, id);
+    expect(adviseNextLetter(s)).toMatchObject({ letter: 'М', ready: false });
+    expect(adviseNextLetter(s)?.message).toContain('відкриється сама');
     for (const id of FIRST_THREE_DAYS) s = complete(s, id);
+    s = lockLetter(s, 'М');
     expect(adviseNextLetter(s)?.letter).toBe('М');
-    expect(s.unlocked).not.toContain('М');
+    expect(adviseNextLetter(s)?.message).not.toContain('відкриється сама');
   });
 });
 
