@@ -499,15 +499,18 @@
   position: fixed;
   inset: 0;
   z-index: 20;
-  display: grid;
-  place-items: center;
+  display: flex;
   padding: 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: rgba(62, 51, 80, 0.35);
   backdrop-filter: blur(3px);
   animation: bubble-in 0.2s ease both;
 }
 
+/* margin: auto центрує картку, а коли вона вища за екран - дає її гортати від самого верху. */
 .modal__card {
+  margin: auto;
   width: min(480px, 100%);
   background: var(--paper);
   border-radius: var(--radius-md);

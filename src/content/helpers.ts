@@ -7,6 +7,10 @@ export const HELPERS = [
   { id: 'owl', name: 'Совеня' },
   { id: 'flower', name: 'Квіточка' },
   { id: 'butterfly', name: 'Метелик' },
+  { id: 'squirrel', name: 'Білочка' },
+  { id: 'hedgehog', name: 'Їжачок' },
+  { id: 'frog', name: 'Жабка' },
+  { id: 'ladybug', name: 'Сонечко' },
 ] as const;
 
 export type HelperId = (typeof HELPERS)[number]['id'];

@@ -106,8 +106,8 @@
 
 .helper-picker {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 108px), 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 82px), 1fr));
+  gap: 10px;
 }
 
 .helper-picker__item {
@@ -118,6 +118,7 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
+  min-width: 0;
   padding: 10px 6px 12px;
   font-weight: 800;
   color: var(--ink);
@@ -131,6 +132,15 @@
 .helper-picker__item--active {
   border-color: var(--fox);
   background: var(--fox-pale);
+}
+
+.helper-picker__item > span {
+  font-size: 0.92rem;
+}
+
+.helper-picker__item .helper {
+  width: min(96px, 100%);
+  height: auto;
 }
 
 .helper-picker--inline {

@@ -13,7 +13,7 @@ interface Palette {
   nose: string;
 }
 
-type AnimalId = Exclude<HelperId, 'flower' | 'butterfly'>;
+type AnimalId = Exclude<HelperId, 'flower' | 'butterfly' | 'frog' | 'ladybug'>;
 
 const PALETTES: Record<AnimalId, Palette> = {
   fox: { fur: ['#F7A462', '#EC7F3C'], dark: '#E3702F', light: '#FFF8EE', feet: '#5B4152', inner: '#5B4152', scarf: ['#6FAE6A', '#5A9A57'], nose: '#3E3350' },
@@ -21,7 +21,21 @@ const PALETTES: Record<AnimalId, Palette> = {
   bear: { fur: ['#C89466', '#A9744B'], dark: '#94633E', light: '#F3DDC2', feet: '#7A5233', inner: '#E8C3A0', scarf: ['#7EC4CF', '#5FAAB6'], nose: '#4A3428' },
   cat: { fur: ['#C3CAD6', '#9EA8B9'], dark: '#8892A5', light: '#FFFFFF', feet: '#8892A5', inner: '#F7B6C8', scarf: ['#E86A8D', '#C9516F'], nose: '#F48FA0' },
   owl: { fur: ['#BC9473', '#97704F'], dark: '#7F5B3E', light: '#F5E6CF', feet: '#F0A04B', inner: '#7F5B3E', scarf: ['#C9B6E4', '#A994CC'], nose: '#F0A04B' },
+  squirrel: { fur: ['#E09A62', '#C9733F'], dark: '#B5622F', light: '#FFF1DE', feet: '#9A5228', inner: '#F7B6C8', scarf: ['#F2C14E', '#D9A532'], nose: '#5B3A2A' },
+  hedgehog: { fur: ['#EED7B4', '#DDBB8E'], dark: '#C9A273', light: '#FFF6E8', feet: '#8A6A52', inner: '#F7B6C8', scarf: ['#E86A8D', '#C9516F'], nose: '#3E3350' },
 };
+
+/** Голочки їжачка: зубчасте коло за голівкою і спинкою. */
+const HEDGEHOG_SPIKES = (() => {
+  const pts: string[] = [];
+  const n = 26;
+  for (let i = 0; i <= n; i++) {
+    const a = Math.PI * (0.95 + (1.1 * i) / n);
+    const [rx, ry] = i % 2 ? [88, 92] : [64, 70];
+    pts.push(`${(100 + rx * Math.cos(a)).toFixed(1)} ${(118 + ry * Math.sin(a)).toFixed(1)}`);
+  }
+  return `M100 150 L${pts.join(' L')} Z`;
+})();
 
 const ROUND_HEAD = 'M38 88 C38 52 64 38 100 38 C136 38 162 52 162 88 C162 120 134 134 100 134 C66 134 38 120 38 88 Z';
 const FOX_HEAD = 'M36 86 C36 50 64 36 100 36 C136 36 164 50 164 86 C164 118 134 132 100 132 C66 132 36 118 36 86 Z';
@@ -81,6 +95,28 @@ function Ears({ id, p }: { id: AnimalId; p: Palette }) {
           </g>
         </>
       );
+    case 'squirrel':
+      return (
+        <>
+          <g className="helper__ear helper__ear--left">
+            <path d="M52 66 L56 16 Q58 10 64 14 L92 46 Z" fill={p.dark} />
+            <path d="M58 58 L60 26 L82 46 Z" fill={p.inner} opacity="0.8" />
+            <path d="M56 18 Q48 4 58 0 Q60 10 64 14 Z" fill={p.dark} />
+          </g>
+          <g className="helper__ear">
+            <path d="M148 66 L144 16 Q142 10 136 14 L108 46 Z" fill={p.dark} />
+            <path d="M142 58 L140 26 L118 46 Z" fill={p.inner} opacity="0.8" />
+            <path d="M144 18 Q152 4 142 0 Q140 10 136 14 Z" fill={p.dark} />
+          </g>
+        </>
+      );
+    case 'hedgehog':
+      return (
+        <>
+          <circle className="helper__ear helper__ear--left" cx="58" cy="54" r="13" fill={p.dark} />
+          <circle className="helper__ear" cx="142" cy="54" r="13" fill={p.dark} />
+        </>
+      );
     case 'owl':
       return (
         <>
@@ -112,6 +148,15 @@ function Tail({ id, p }: { id: AnimalId; p: Palette }) {
       return <circle cx="136" cy="196" r="9" fill={p.dark} />;
     case 'owl':
       return <path d="M86 202 L100 218 L114 202 Z" fill={p.dark} />;
+    case 'squirrel':
+      return (
+        <g className="helper__tail">
+          <path d="M126 198 C196 202 214 120 182 74 C166 52 132 60 138 88 C144 112 170 120 162 152 C156 174 140 182 124 186 Z" fill={`url(#hf-${id})`} />
+          <path d="M182 74 C166 52 132 60 138 88 C148 76 166 76 178 92 C186 88 188 82 182 74 Z" fill={p.light} opacity="0.9" />
+        </g>
+      );
+    case 'hedgehog':
+      return <path d={HEDGEHOG_SPIKES} fill="#8A6A52" stroke="#755843" strokeWidth="3" strokeLinejoin="round" />;
   }
 }
 
@@ -162,6 +207,7 @@ function Extras({ id, p }: { id: AnimalId; p: Palette }) {
         </g>
       );
     case 'bunny':
+    case 'squirrel':
       return <rect x="96" y="114" width="8" height="7" rx="1.5" fill="#fff" stroke="#3E3350" strokeWidth="1.5" />;
     case 'owl':
       return (
@@ -210,7 +256,17 @@ export function Helper({ id, mood = 'idle', size = 160, className = '' }: Helper
       aria-label={helperName(id)}
     >
       <ellipse cx="100" cy="210" rx="62" ry="7" fill="#3E3350" opacity="0.12" />
-      {id === 'flower' ? <Flower mood={mood} /> : id === 'butterfly' ? <Butterfly mood={mood} /> : <Animal id={id} mood={mood} />}
+      {id === 'flower' ? (
+        <Flower mood={mood} />
+      ) : id === 'butterfly' ? (
+        <Butterfly mood={mood} />
+      ) : id === 'frog' ? (
+        <Frog mood={mood} />
+      ) : id === 'ladybug' ? (
+        <Ladybug mood={mood} />
+      ) : (
+        <Animal id={id} mood={mood} />
+      )}
     </svg>
   );
 }
@@ -376,6 +432,94 @@ function Butterfly({ mood }: { mood: HelperMood }) {
         <circle cx="143" cy="13" r="7" fill="#F49CBF" />
         <circle cx="100" cy="88" r="46" fill="url(#hf-butterfly)" />
         <ellipse cx="100" cy="98" rx="36" ry="30" fill="#B7A6DA" opacity="0.55" />
+        <Expression mood={mood} />
+      </g>
+    </>
+  );
+}
+
+/** Жабка: широка голівка з очима-горбиками, світле черевце і лапки-ласти. */
+function Frog({ mood }: { mood: HelperMood }) {
+  return (
+    <>
+      <defs>
+        <linearGradient id="hf-frog" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#9BD37F" />
+          <stop offset="1" stopColor="#6DB65A" />
+        </linearGradient>
+      </defs>
+
+      <g className="helper__body">
+        <path d="M60 204 C52 162 68 132 100 128 C132 132 148 162 140 204 Z" fill="url(#hf-frog)" />
+        <ellipse cx="100" cy="176" rx="26" ry="27" fill="#E9F6D8" />
+        <path d="M56 206 L64 194 L72 206 L80 194 L88 206 Z" fill="#5AA34A" />
+        <path d="M112 206 L120 194 L128 206 L136 194 L144 206 Z" fill="#5AA34A" />
+        <g className="helper__paws">
+          <ellipse cx="80" cy="166" rx="9" ry="12" fill="#5AA34A" />
+          <ellipse cx="120" cy="166" rx="9" ry="12" fill="#5AA34A" />
+        </g>
+      </g>
+
+      <g className="helper__head">
+        <circle cx="78" cy="72" r="26" fill="url(#hf-frog)" />
+        <circle cx="122" cy="72" r="26" fill="url(#hf-frog)" />
+        <ellipse cx="100" cy="102" rx="68" ry="40" fill="url(#hf-frog)" />
+        <circle cx="78" cy="78" r="17" fill="#FFFFFF" />
+        <circle cx="122" cy="78" r="17" fill="#FFFFFF" />
+        <g fill="#5AA34A" opacity="0.5">
+          <circle cx="50" cy="116" r="3" />
+          <circle cx="58" cy="124" r="2.2" />
+          <circle cx="150" cy="116" r="3" />
+          <circle cx="142" cy="124" r="2.2" />
+        </g>
+        <Expression mood={mood} />
+      </g>
+    </>
+  );
+}
+
+const LADYBUG_SPOTS: [number, number, number][] = [
+  [72, 150, 9],
+  [128, 150, 9],
+  [66, 182, 8],
+  [134, 182, 8],
+  [86, 200, 6],
+  [114, 200, 6],
+];
+
+/** Сонечко: червоні крильця в чорні цятки, голівка з вусиками і світлим личком. */
+function Ladybug({ mood }: { mood: HelperMood }) {
+  return (
+    <>
+      <defs>
+        <radialGradient id="hf-ladybug" cx="0.4" cy="0.3" r="0.8">
+          <stop offset="0" stopColor="#FF8A7A" />
+          <stop offset="1" stopColor="#E0453A" />
+        </radialGradient>
+      </defs>
+
+      <g className="helper__paws" stroke="#4A3E5C" strokeWidth="6" strokeLinecap="round">
+        <path d="M52 156 L36 150 M50 180 L34 186 M148 156 L164 150 M150 180 L166 186" />
+      </g>
+
+      <g className="helper__body">
+        <ellipse cx="100" cy="170" rx="52" ry="42" fill="url(#hf-ladybug)" />
+        <path d="M100 132 L100 212" stroke="#4A3E5C" strokeWidth="3" />
+        {LADYBUG_SPOTS.map(([x, y, r]) => (
+          <circle key={`${x}-${y}`} cx={x} cy={y} r={r} fill="#4A3E5C" />
+        ))}
+        <ellipse cx="78" cy="146" rx="10" ry="5" fill="#fff" opacity="0.35" transform="rotate(-30 78 146)" />
+      </g>
+
+      <g className="helper__head">
+        <g fill="none" stroke="#4A3E5C" strokeWidth="4" strokeLinecap="round">
+          <path className="helper__ear helper__ear--left" d="M84 50 C78 32 70 22 60 18" />
+          <path className="helper__ear" d="M116 50 C122 32 130 22 140 18" />
+        </g>
+        <circle cx="59" cy="17" r="7" fill="#4A3E5C" />
+        <circle cx="141" cy="17" r="7" fill="#4A3E5C" />
+        <circle cx="100" cy="90" r="46" fill="#4A3E5C" />
+        <ellipse cx="100" cy="96" rx="40" ry="34" fill="#FFF1E6" />
         <Expression mood={mood} />
       </g>
     </>
