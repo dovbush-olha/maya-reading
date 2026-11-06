@@ -56,14 +56,19 @@ export function PickByEar({ exercise, readingCase, solo, completed, onFeedback, 
 
   return (
     <div className="exercise exercise--ear">
-      {recorded ? (
-        <ListenButton onPlay={play} big />
-      ) : (
-        <div className="listen-badge" aria-hidden="true">
-          <span className="listen-badge__ear">👂</span>
-          <span className="listen-badge__waves" />
-        </div>
-      )}
+      {/* Підказка - поруч із кнопкою звуку, а не окремим рядком: з трьома словами стовпчиком
+          інакше кнопка «Далі» на телефоні опиняється нижче екрана. */}
+      <div className="ear-head">
+        {recorded ? (
+          <ListenButton onPlay={play} big />
+        ) : (
+          <div className="listen-badge" aria-hidden="true">
+            <span className="listen-badge__ear">👂</span>
+            <span className="listen-badge__waves" />
+          </div>
+        )}
+        <HintButton onClick={() => raise(false)} disabled={completed || level >= 2} />
+      </div>
       {!solo && (
         <AdultPrompt>
           {recorded ? 'Звучить ваш запис. Можна повторити й самим: ' : 'Прочитайте вголос, чітко і злито: '}
@@ -98,10 +103,6 @@ export function PickByEar({ exercise, readingCase, solo, completed, onFeedback, 
             </button>
           );
         })}
-      </div>
-
-      <div className="exercise__tools">
-        <HintButton onClick={() => raise(false)} disabled={completed || level >= 2} />
       </div>
     </div>
   );

@@ -743,6 +743,24 @@
 
 /* ---------- Послухай і вибери ---------- */
 
+.ear-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: clamp(14px, 3vw, 28px);
+}
+
+/* Кнопка звуку і картки слів стискаються на невисоких екранах, щоб «Далі» було видно без прокрутки. */
+.ear-head .listen-button--big {
+  width: clamp(80px, 14vh, 108px);
+  height: clamp(80px, 14vh, 108px);
+}
+
+.ear-row--long .syllable-tile {
+  height: clamp(60px, 11vh, 112px);
+}
+
 .ear-row {
   display: flex;
   justify-content: center;
