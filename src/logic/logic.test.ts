@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { NOT_YET_STUDIED, isReadableWith, type LetterId } from '../content/alphabet';
-import type { Exercise } from '../content/types';
+import type { BuildWordExercise, Exercise } from '../content/types';
 import { validateExercise } from '../content/validate';
 import { WEEK_1, WEEK_1_MISSIONS } from '../content/week1';
 import { adviseNextLetter, missionAvailability, recommend } from './availability';
@@ -302,6 +302,10 @@ describe('режим «сама»', () => {
     expect(adaptForSolo({ kind: 'build-word', word: 'мило', distractors: ['ла'] }, never, makeRng('a')).kind).toBe('build-word');
     expect(adaptForSolo({ kind: 'build-word', word: 'сом', distractors: ['са'] }, never, makeRng('a')).kind).toBe('pick-picture');
     expect(adaptForSolo({ kind: 'build-word', word: 'Алла', distractors: ['ло'] }, never, makeRng('a'))).toEqual({ kind: 'read-word', word: 'Алла' });
+    // Дорослий записав фразу - Майя складає її сама, на слух.
+    const phrase: BuildWordExercise = { kind: 'build-word', word: 'Мама мила', distractors: ['мо'] };
+    expect(adaptForSolo(phrase, never, makeRng('a'), (t) => t === 'Мама мила').kind).toBe('build-word');
+    expect(adaptForSolo(phrase, never, makeRng('a')).kind).not.toBe('build-word');
   });
 });
 

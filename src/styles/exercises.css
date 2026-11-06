@@ -619,10 +619,36 @@
   background: var(--fox-pale);
 }
 
+.word-slots__word {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Фраза: між словами широкий проміжок, як у тексті для читання. */
+.word-slots--phrase {
+  column-gap: clamp(28px, 6vw, 48px);
+  row-gap: 14px;
+}
+
 .word-slots--built {
   background: var(--sun-pale);
-  gap: 0;
   padding: 14px 28px;
+}
+
+.word-slots--built .word-slots__word {
+  gap: 0;
+}
+
+.word-slots--built:not(.word-slots--phrase) {
+  gap: 0;
+}
+
+.build__prompt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
 }
 
 .word-slots--revealed {

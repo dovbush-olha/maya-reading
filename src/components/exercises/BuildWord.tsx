@@ -1,12 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { HINTS, PRAISE, PRAISE_READING_ALONE, PRAISE_READING_TOGETHER, TRY_AGAIN, pick } from '../../content/phrases';
 import type { BuildWordExercise } from '../../content/types';
-import { getWord, syllablesOf } from '../../content/words';
+import { getWord, isPhrase, syllablesOf, wordsOf } from '../../content/words';
 import { chime } from '../../audio/audio';
+import { hasRecording, playRecording } from '../../audio/recordings';
+import { sayKey } from '../../logic/voice';
 import { makeRng, shuffle } from '../../logic/generate';
 import { SoloRead } from '../SoloRead';
-import { AdultPrompt, ColoredText, HintButton, ReadingMarks } from '../ui';
+import { AdultPrompt, ColoredText, HintButton, ListenButton, ReadingMarks } from '../ui';
 import { caseText } from '../text';
+import { toLower } from '../../content/alphabet';
 import type { ExerciseProps } from './types';
 
 interface Tile {
@@ -15,12 +18,17 @@ interface Tile {
 }
 
 /**
- * Склади слово зі складів по порядку, а потім прочитай його.
- * З дорослим - він каже слово по складах. Сама - підказкою є однозначна картинка.
+ * Склади слово чи фразу зі складів по порядку, а потім прочитай.
+ * З дорослим - він каже слово по складах. Сама - підказкою є записаний голос дорослого
+ * або однозначна картинка. Фраза складається слово за словом, між словами - широкий проміжок.
  */
 export function BuildWord({ exercise, seed, readingCase, solo, completed, onFeedback, onComplete }: ExerciseProps<BuildWordExercise>) {
   const word = getWord(exercise.word);
   const parts = syllablesOf(word);
+  const groups = wordsOf(word);
+  // Номер першого складу кожного слова - щоб розкласти віконця по словах.
+  const offsets = groups.map((_, w) => groups.slice(0, w).reduce((n, g) => n + g.length, 0));
+  const phrase = isPhrase(word);
   const [tiles] = useState<Tile[]>(() =>
     shuffle(
       [...parts, ...exercise.distractors].map((text, id) => ({ id, text })),
@@ -33,22 +41,35 @@ export function BuildWord({ exercise, seed, readingCase, solo, completed, onFeed
   const [glow, setGlow] = useState(false);
   const show = (t: string) => caseText(t, readingCase);
   const showPicture = solo && word.clear;
+  // Сама: слово звучить голосом дорослого, і його можна послухати ще раз.
+  const voiced = solo && hasRecording(sayKey(word.text));
+  const listen = () => void playRecording(sayKey(word.text));
+
+  useEffect(() => {
+    if (!voiced || completed) return;
+    const t = window.setTimeout(() => void playRecording(sayKey(word.text)), 500);
+    return () => window.clearTimeout(t);
+  }, [voiced, completed, word.text]);
 
   const built = placed.length === parts.length;
   const expected = parts[placed.length];
-  const glowTile = glow && !built ? tiles.find((t) => !placed.includes(t.id) && t.text === expected)?.id : undefined;
+  // «Лі» і «лі» - той самий склад (у «Лілі» обидва; великими буквами їх і не розрізниш).
+  const fits = (tile: Tile) => expected !== undefined && toLower(tile.text) === toLower(expected);
+  const glowTile = glow && !built ? tiles.find((t) => !placed.includes(t.id) && fits(t))?.id : undefined;
 
   const tap = (tile: Tile) => {
     if (built || placed.includes(tile.id)) return;
-    if (tile.text === expected) {
+    if (fits(tile)) {
       const next = [...placed, tile.id];
       setPlaced(next);
       setGlow(false);
       if (next.length === parts.length) {
         chime();
-        onFeedback({ mood: 'happy', text: HINTS.buildDone });
+        onFeedback({ mood: 'happy', text: phrase ? HINTS.buildPhraseDone : HINTS.buildDone });
       } else {
-        onFeedback({ mood: 'happy', text: HINTS.buildMore });
+        // Склали ціле слово фрази - кажемо, що далі нове слово.
+        const wordDone = offsets.includes(next.length);
+        onFeedback({ mood: 'happy', text: wordDone ? HINTS.buildNextWord : HINTS.buildMore });
       }
     } else {
       setShake(tile.id);
@@ -80,26 +101,46 @@ export function BuildWord({ exercise, seed, readingCase, solo, completed, onFeed
 
   return (
     <div className="exercise exercise--build">
-      {showPicture && !completed && (
-        <div className="picture-prompt" aria-label="Яке це слово?">
-          <span>{word.picture}</span>
+      {(showPicture || voiced) && !completed && (
+        <div className="build__prompt">
+          {showPicture && (
+            <div className="picture-prompt" aria-label={phrase ? 'Що тут написано?' : 'Яке це слово?'}>
+              <span>{word.picture}</span>
+            </div>
+          )}
+          {voiced && !built && <ListenButton onPlay={listen} big={!showPicture} />}
         </div>
       )}
       {!solo && !built && (
         <AdultPrompt>
-          Скажіть слово по складах: <b>«{word.split}»</b>. Потім повторіть перший склад, коли Майя шукатиме.
+          Скажіть {phrase ? 'фразу' : 'слово'} по складах: <b>«{word.split}»</b>.{' '}
+          {phrase
+            ? 'Майя складає слово за словом; коли перше слово готове, назвіть наступне ще раз.'
+            : 'Потім повторіть перший склад, коли Майя шукатиме.'}
         </AdultPrompt>
       )}
 
-      <div className={`word-slots ${built ? 'word-slots--built' : ''} ${completed ? 'word-slots--revealed' : ''}`}>
-        {parts.map((_, i) => {
-          const tile = tiles.find((t) => t.id === placed[i]);
-          return (
-            <span key={i} className={`word-slot ${tile ? 'word-slot--filled' : ''} ${i === placed.length && !built ? 'word-slot--next' : ''}`}>
-              {tile && <ColoredText text={show(tile.text)} className="reading-text reading-text--tile" />}
-            </span>
-          );
-        })}
+      <div
+        className={['word-slots', phrase && 'word-slots--phrase', built && 'word-slots--built', completed && 'word-slots--revealed']
+          .filter(Boolean)
+          .join(' ')}
+      >
+        {groups.map((g, w) => (
+          <span key={w} className="word-slots__word">
+            {g.map((_, j) => {
+              const i = offsets[w] + j;
+              const tile = tiles.find((t) => t.id === placed[i]);
+              return (
+                <span
+                  key={i}
+                  className={`word-slot ${tile ? 'word-slot--filled' : ''} ${i === placed.length && !built ? 'word-slot--next' : ''}`}
+                >
+                  {tile && <ColoredText text={show(tile.text)} className="reading-text reading-text--tile" />}
+                </span>
+              );
+            })}
+          </span>
+        ))}
         {completed && (
           <span className="word-reveal word-reveal--inline" aria-live="polite">
             <span className="word-reveal__picture">{word.picture}</span>
@@ -141,7 +182,7 @@ export function BuildWord({ exercise, seed, readingCase, solo, completed, onFeed
 
       {built && !completed && (
         <>
-          {!solo && <AdultPrompt>Нехай Майя прочитає складене слово. Картинка з’явиться після читання.</AdultPrompt>}
+          {!solo && <AdultPrompt>Нехай Майя прочитає {phrase ? 'складену фразу' : 'складене слово'}. Картинка з’явиться після читання.</AdultPrompt>}
           {solo ? <SoloRead text={word.text} onDone={soloDone} /> : <ReadingMarks onMark={mark} />}
         </>
       )}

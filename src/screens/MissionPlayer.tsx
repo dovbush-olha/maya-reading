@@ -1,6 +1,6 @@
 import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { helperName } from '../content/helpers';
-import { CHILD_NAME, INSTRUCTIONS } from '../content/phrases';
+import { CHILD_NAME, INSTRUCTIONS, PHRASE_BUILD_INSTRUCTION } from '../content/phrases';
 import type { Exercise, Mission } from '../content/types';
 import { fanfare, sparkle } from '../audio/audio';
 import { hasRecording, soundKey } from '../audio/recordings';
@@ -12,6 +12,8 @@ import { ColoredText, Confetti } from '../components/ui';
 import { makeRng, prepareExercise, warmUp } from '../logic/generate';
 import { applyExerciseResult, completeMission, todayISO, type ExerciseResult, type MissionSummary } from '../logic/progress';
 import { adaptForSolo, preferRecordedVoice } from '../logic/solo';
+import { sayKey } from '../logic/voice';
+import { getWord, isPhrase } from '../content/words';
 import type { LetterId } from '../content/alphabet';
 import { getProgress, updateProgress, useProgress } from '../store/progressStore';
 
@@ -35,10 +37,11 @@ export function MissionPlayer({ mission, onExit, onRepeat }: Props) {
     const rng = makeRng(runId);
     const state = getProgress();
     const hasSound = (l: LetterId) => hasRecording(soundKey(l));
+    const hasSay = (text: string) => hasRecording(sayKey(text));
     const warm = mission.goal === 'practice' ? [] : warmUp(state, mission, todayISO(), rng);
     return [...warm, ...mission.exercises]
       .map((e) => preferRecordedVoice(e, hasSound))
-      .map((e) => (state.settings.mode === 'solo' ? adaptForSolo(e, hasSound, rng) : e))
+      .map((e) => (state.settings.mode === 'solo' ? adaptForSolo(e, hasSound, rng, hasSay) : e))
       .map((e) => prepareExercise(e, rng));
   }, [mission, runId]);
 
@@ -52,7 +55,8 @@ export function MissionPlayer({ mission, onExit, onRepeat }: Props) {
 
   const current = exercises[index];
   const completed = results.length > index;
-  const bubble = feedback?.text ?? (current ? INSTRUCTIONS[current.kind] : '');
+  const buildsPhrase = current?.kind === 'build-word' && isPhrase(getWord(current.word));
+  const bubble = feedback?.text ?? (buildsPhrase ? PHRASE_BUILD_INSTRUCTION : current ? INSTRUCTIONS[current.kind] : '');
   const mood = feedback?.mood ?? 'idle';
 
   const handleComplete = (r: ExerciseResult) => {

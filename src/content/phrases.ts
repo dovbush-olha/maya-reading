@@ -7,6 +7,9 @@ import type { ExerciseKind } from './types';
 export const CHILD_NAME = 'Майя';
 export const CHILD_NAME_VOCATIVE = 'Майє';
 
+/** «Склади слово», коли складаємо фразу з кількох слів. */
+export const PHRASE_BUILD_INSTRUCTION = 'Склади фразу зі складів, слово за словом.';
+
 export const INSTRUCTIONS: Record<ExerciseKind, string> = {
   'intro-letter': 'Знайомся з новою буквою! Торкнись її.',
   'find-letter': 'Знайди таку саму букву.',
@@ -57,6 +60,8 @@ export const HINTS = {
   readWordSplit: 'Подивись: слово розділилося на склади. Кожен склад читай разом, як біжить кулька.',
   buildDone: 'Слово готове! А тепер прочитай його.',
   buildMore: 'Так! А який склад далі?',
+  buildNextWord: 'Слово готове! Тепер наступне слово.',
+  buildPhraseDone: 'Усе склала! А тепер прочитай слово за словом.',
   pickWrong: 'Прочитай ще раз, по складах.',
   pickGlow: 'Ось потрібна картинка світиться.',
   soloRead: 'А тепер прочитай уголос!',

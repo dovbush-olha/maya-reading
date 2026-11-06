@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { LETTERS, NOT_YET_STUDIED, VOWELS_FIRST, UKRAINIAN_ALPHABET, lettersOf } from './alphabet';
-import { GREETINGS, HINTS, INSTRUCTIONS, PRAISE, PRAISE_AFTER_HINT, PRAISE_READING_ALONE, PRAISE_READING_TOGETHER, TRY_AGAIN } from './phrases';
+import { GREETINGS, HINTS, INSTRUCTIONS, PHRASE_BUILD_INSTRUCTION, PRAISE, PRAISE_AFTER_HINT, PRAISE_READING_ALONE, PRAISE_READING_TOGETHER, TRY_AGAIN } from './phrases';
 import { validateMission } from './validate';
 import { WEEK_1, WEEK_1_MISSIONS } from './week1';
 import type { Exercise } from './types';
@@ -92,12 +92,28 @@ describe('перший тиждень', () => {
   it('фрази - лише в останній місії дня і після багатьох окремих слів', () => {
     for (const day of WEEK_1) {
       day.missions.forEach((m, i) => {
-        const firstPhrase = m.exercises.findIndex((e) => e.kind === 'read-word' && isPhrase(getWord(e.word)));
+        const firstPhrase = m.exercises.findIndex((e) => (e.kind === 'read-word' || e.kind === 'build-word') && isPhrase(getWord(e.word)));
         if (firstPhrase === -1) return;
         expect(i, `${m.id}: фраза не в останній місії дня`).toBe(day.missions.length - 1);
         const before = [...day.missions.slice(0, i).flatMap((x) => x.exercises), ...m.exercises.slice(0, firstPhrase)];
         expect(singleWords(before).length, `${m.id}: замало слів перед першою фразою`).toBeGreaterThanOrEqual(6);
       });
+    }
+  });
+
+  it('фрази й складаємо зі складів: щодня з фразами - хоча б дві', () => {
+    for (const day of WEEK_1) {
+      const exs = exercisesOf(day);
+      const phrases = exs.filter((e) => e.kind === 'read-word' && isPhrase(getWord(e.word)));
+      if (!phrases.length) continue;
+      const built = exs.filter((e) => e.kind === 'build-word' && isPhrase(getWord(e.word)));
+      expect(built.length, `день ${day.day}`).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it('щодня від дня 2 складаємо хоча б три слова чи фрази', () => {
+    for (const day of WEEK_1.slice(1)) {
+      expect(exercisesOf(day).filter((e) => e.kind === 'build-word').length, `день ${day.day}`).toBeGreaterThanOrEqual(3);
     }
   });
 
@@ -126,6 +142,7 @@ describe('перший тиждень', () => {
 describe('фрази лисички', () => {
   const spoken = [
     ...Object.values(INSTRUCTIONS),
+    PHRASE_BUILD_INSTRUCTION,
     ...Object.values(HINTS),
     ...PRAISE,
     ...PRAISE_AFTER_HINT,

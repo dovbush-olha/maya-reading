@@ -23,7 +23,13 @@ export function preferRecordedVoice(ex: Exercise, hasSound: (l: LetterId) => boo
  * перетворюємо так, щоб їх можна було виконати й перевірити без дорослого.
  * Контент місій при цьому не змінюється.
  */
-export function adaptForSolo(ex: Exercise, hasSound: (l: LetterId) => boolean, rng: Rng): Exercise {
+export function adaptForSolo(
+  ex: Exercise,
+  hasSound: (l: LetterId) => boolean,
+  rng: Rng,
+  /** Чи записав дорослий, як читається це слово чи фраза. */
+  hasSay: (text: string) => boolean = () => false,
+): Exercise {
   switch (ex.kind) {
     case 'letter-by-sound':
       // Без запису голосу звук ніхто не вимовить - шукаємо букву за зразком.
@@ -32,8 +38,9 @@ export function adaptForSolo(ex: Exercise, hasSound: (l: LetterId) => boolean, r
       // Якщо картинку не впізнати за текстом, лишаємо просте «прочитай»: воно не пише читання в журнал.
       return toPickPicture(ex.word, rng) ?? ex;
     case 'build-word': {
-      // Складати за картинкою можна лише коли картинка однозначна; інакше - читаємо й обираємо картинку.
-      if (getWord(ex.word).clear) return ex;
+      // Складати можна, коли слово звучить голосом дорослого або картинка однозначна;
+      // інакше - читаємо й обираємо картинку.
+      if (hasSay(ex.word) || getWord(ex.word).clear) return ex;
       return toPickPicture(ex.word, rng) ?? { kind: 'read-word', word: ex.word };
     }
     default:

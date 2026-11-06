@@ -742,10 +742,21 @@
     gap: 8px;
   }
 
+  .word-slots__word {
+    gap: 8px;
+  }
+
+  .word-slots--phrase {
+    column-gap: 24px;
+  }
+
   /* Складене слово - одним словом, без проміжків між складами. */
   .word-slots--built {
-    gap: 0;
     padding: 12px 18px;
+  }
+
+  .word-slots--built:not(.word-slots--phrase) {
+    gap: 0;
   }
 
   .word-slots--built .word-reveal--inline {

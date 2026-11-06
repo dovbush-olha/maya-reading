@@ -1,6 +1,6 @@
-import { BASE_LETTERS, LETTERS, NOT_YET_STUDIED, PLANNED_LETTERS, isReadableWith, lettersOf, type LetterId } from './alphabet';
+import { BASE_LETTERS, LETTERS, NOT_YET_STUDIED, PLANNED_LETTERS, isReadableWith, lettersOf, toLower, type LetterId } from './alphabet';
 import type { Exercise, Mission } from './types';
-import { WORDS, isPhrase, syllablesOf } from './words';
+import { WORDS, syllablesOf } from './words';
 
 /** Усі рядки, які дитина бачить і має розпізнати/прочитати у вправі. */
 export function childFacingTexts(ex: Exercise): string[] {
@@ -72,9 +72,9 @@ export function validateExercise(ex: Exercise, allowed: readonly LetterId[]): st
       }
       if (ex.kind === 'build-word') {
         const syllables = syllablesOf(word);
-        if (isPhrase(word)) errors.push(`${label}: «${ex.word}» - фраза; складати можна лише одне слово`);
         if (syllables.length < 2) errors.push(`${label}: «${ex.word}» має лише один склад - краще read-word`);
-        const overlap = ex.distractors.filter((d) => syllables.includes(d));
+        const lower = syllables.map(toLower);
+        const overlap = ex.distractors.filter((d) => lower.includes(toLower(d)));
         if (overlap.length) errors.push(`${label}: зайві склади ${overlap.join(', ')} входять у слово`);
         if (!ex.distractors.length) errors.push(`${label}: потрібен хоча б один зайвий склад`);
       }
