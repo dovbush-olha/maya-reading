@@ -11,6 +11,7 @@ import { plural } from '../components/text';
 import { ColoredText, Confetti } from '../components/ui';
 import { makeRng, prepareExercise, warmUp } from '../logic/generate';
 import { applyExerciseResult, completeMission, todayISO, type ExerciseResult, type MissionSummary } from '../logic/progress';
+import { practisedItems } from '../logic/review';
 import { adaptForSolo, preferRecordedVoice } from '../logic/solo';
 import { sayKey } from '../logic/voice';
 import { getWord, isPhrase } from '../content/words';
@@ -59,8 +60,9 @@ export function MissionPlayer({ mission, onExit, onRepeat }: Props) {
   const bubble = feedback?.text ?? (buildsPhrase ? PHRASE_BUILD_INSTRUCTION : current ? INSTRUCTIONS[current.kind] : '');
   const mood = feedback?.mood ?? 'idle';
 
-  const handleComplete = (r: ExerciseResult) => {
+  const handleComplete = (result: ExerciseResult) => {
     if (completed) return;
+    const r: ExerciseResult = { ...result, items: practisedItems(current, result.hinted) };
     setResults((prev) => [...prev, r]);
     updateProgress((s) => applyExerciseResult(s, r, todayISO()));
     window.setTimeout(sparkle, 650);

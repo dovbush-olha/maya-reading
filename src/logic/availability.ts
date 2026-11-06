@@ -9,6 +9,8 @@ export type MissionAvailability = 'done' | 'available' | 'needs-letters' | 'lock
 export const STRUGGLE_HINT_RATE = 0.4;
 /** Скільки разів поспіль радимо повторити складну місію, перш ніж іти далі. */
 export const MAX_SUGGESTED_REPEATS = 3;
+/** Після скількох місій поспіль радимо «Повторення в лісі», навіть посеред дня. */
+export const REVIEW_EVERY = 3;
 
 export function missingLetters(state: ProgressState, mission: Mission): LetterId[] {
   return mission.requires.filter((l) => !state.unlocked.includes(l));
@@ -27,7 +29,9 @@ export function missionAvailability(state: ProgressState, mission: Mission, miss
 export type Recommendation =
   | { kind: 'mission'; mission: Mission; reason: 'next' | 'repeat' }
   | { kind: 'practice'; reason: 'needs-letters'; letters: LetterId[]; waitingMission: Mission }
-  | { kind: 'practice'; reason: 'week-done' };
+  | { kind: 'practice'; reason: 'week-done' }
+  /** Новий день або кілька місій поспіль: спершу повторюємо вже знайоме. */
+  | { kind: 'practice'; reason: 'review'; nextMission: Mission };
 
 export function recommend(state: ProgressState, missions = WEEK_1_MISSIONS): Recommendation {
   const index = missions.findIndex((m) => !state.missions[m.id]?.completions);
@@ -40,6 +44,11 @@ export function recommend(state: ProgressState, missions = WEEK_1_MISSIONS): Rec
   }
   const missing = missingLetters(state, next);
   if (missing.length) return { kind: 'practice', reason: 'needs-letters', letters: missing, waitingMission: next };
+  // Перша місія нового дня приносить нову букву - перед нею повторюємо попередні дні.
+  const newDay = Boolean(prev) && next.order === 1;
+  if (state.sinceReview >= REVIEW_EVERY || (newDay && state.sinceReview > 0)) {
+    return { kind: 'practice', reason: 'review', nextMission: next };
+  }
   return { kind: 'mission', mission: next, reason: 'next' };
 }
 

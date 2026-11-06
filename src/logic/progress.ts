@@ -1,7 +1,8 @@
-import { BASE_LETTERS, PLANNED_LETTERS, UKRAINIAN_ALPHABET, isLetterId, type LetterId } from '../content/alphabet';
+import { BASE_LETTERS, PLANNED_LETTERS, UKRAINIAN_ALPHABET, isLetterId, lettersOf, type LetterId } from '../content/alphabet';
 import { isHelperId, type HelperId } from '../content/helpers';
 import type { Mission } from '../content/types';
 import { WEEK_1_MISSIONS } from '../content/week1';
+import type { ItemOutcome } from './review';
 import { nextReview, type ReviewItem } from './srs';
 
 export type LetterStatus = 'knows' | 'sometimes' | 'learning';
@@ -85,6 +86,10 @@ export interface ProgressState {
   autoUnlocked: LetterId[];
   letters: Partial<Record<LetterId, LetterProgress>>;
   reading: Record<string, ReadingLog>;
+  /** Інтервальне повторення складів і слів, як у букв. Ключ - текст з контенту («ма», «Лола»). */
+  review: Record<string, ReviewItem>;
+  /** Скільки нових місій пройдено після останнього «Повторення в лісі». */
+  sinceReview: number;
   missions: Record<string, MissionRecord>;
   stickers: string[];
   /** Зірочки за кожне виконане завдання. Лише додаються, ніколи не забираються. */
@@ -109,9 +114,14 @@ export interface ExerciseResult {
   letters?: LetterOutcome[];
   /** Відмітка читання. Записуємо лише перевірене: дорослим (одразу чи потім, за записом) або вибором картинки. */
   reading?: ReadingOutcome;
+  /** Склади й слова, які тренувала вправа (для інтервального повторення). */
+  items?: ItemOutcome[];
 }
 
 const RECENT_WINDOW = 6;
+
+/** Ідентифікатор «Повторення в лісі»: місія складається щоразу заново. */
+export const PRACTICE_ID = 'practice';
 
 export function todayISO(date = new Date()): string {
   const y = date.getFullYear();
@@ -134,6 +144,8 @@ export function createInitialState(today = todayISO()): ProgressState {
     autoUnlocked: [],
     letters,
     reading: {},
+    review: {},
+    sinceReview: 0,
     missions: {},
     stickers: [],
     stars: 0,
@@ -172,6 +184,8 @@ export function normalizeState(raw: unknown, today = todayISO()): ProgressState 
       autoUnlocked: Array.isArray(r.autoUnlocked) ? r.autoUnlocked.filter(isLetterId) : [],
       letters,
       reading: r.reading && typeof r.reading === 'object' ? r.reading : {},
+      review: normalizeReview(r.review),
+      sinceReview: typeof r.sinceReview === 'number' && r.sinceReview >= 0 ? Math.floor(r.sinceReview) : 0,
       missions: r.missions && typeof r.missions === 'object' ? r.missions : {},
       stickers: Array.isArray(r.stickers) ? r.stickers : [],
       stars: typeof r.stars === 'number' && r.stars >= 0 ? Math.floor(r.stars) : 0,
@@ -179,6 +193,22 @@ export function normalizeState(raw: unknown, today = todayISO()): ProgressState 
     },
     today,
   );
+}
+
+function normalizeReview(raw: unknown): Record<string, ReviewItem> {
+  const review: Record<string, ReviewItem> = {};
+  if (!raw || typeof raw !== 'object') return review;
+  for (const [text, v] of Object.entries(raw)) {
+    const item = v as Partial<ReviewItem> | null;
+    if (!item || typeof item.box !== 'number' || typeof item.due !== 'string') continue;
+    try {
+      if (!lettersOf(text).length) continue;
+    } catch {
+      continue;
+    }
+    review[text] = { box: item.box, due: item.due, promotedAt: typeof item.promotedAt === 'string' ? item.promotedAt : undefined };
+  }
+  return review;
 }
 
 function letterOf(state: ProgressState, id: LetterId, today: string): LetterProgress {
@@ -201,6 +231,11 @@ export function applyExerciseResult(state: ProgressState, result: ExerciseResult
       };
     }
     next = { ...next, letters };
+  }
+  if (result.items?.length) {
+    const review = { ...next.review };
+    for (const o of result.items) review[o.text] = nextReview(review[o.text] ?? { box: 1, due: today }, o.firstTry, today);
+    next = { ...next, review };
   }
   if (result.reading) next = logReading(next, result.reading.text, result.reading.alone, today);
   return next;
@@ -248,6 +283,8 @@ export function completeMission(state: ProgressState, s: MissionSummary, today =
         },
       },
       stickers: state.stickers.includes(s.sticker) ? state.stickers : [...state.stickers, s.sticker],
+      // Повторна місія сама вже повторення - рахуємо лише нові.
+      sinceReview: s.missionId === PRACTICE_ID ? 0 : state.sinceReview + (prev?.completions ? 0 : 1),
     },
     today,
   );

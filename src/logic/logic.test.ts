@@ -4,7 +4,8 @@ import type { BuildWordExercise, Exercise, PickByEarExercise } from '../content/
 import { validateExercise } from '../content/validate';
 import { WEEK_1, WEEK_1_MISSIONS } from '../content/week1';
 import { adviseNextLetter, missionAvailability, recommend } from './availability';
-import { buildPracticeMission, earExercise, makeRng, warmUp } from './generate';
+import { MAX_WARM_UP, buildPracticeMission, earExercise, makeRng, warmUp } from './generate';
+import { dueItems, practisedItems, textsOf } from './review';
 import { adaptForSolo, canPickPicture, preferRecordedVoice } from './solo';
 import { closeness } from './similar';
 import { ALL_WORDS, getWord, isPhrase, syllablesOf } from '../content/words';
@@ -101,6 +102,9 @@ describe('доступність місій', () => {
     expect(s.unlocked).toContain('М');
     expect(s.letters.М).toMatchObject({ status: 'learning', box: 1, due: TODAY });
     expect(missionAvailability(s, day4)).toBe('available');
+    // Перед новою буквою - повторення попередніх днів.
+    expect(recommend(s)).toMatchObject({ kind: 'practice', reason: 'review', nextMission: { id: 'w1d4m1' } });
+    s = complete(s, 'practice');
     expect(recommend(s)).toMatchObject({ kind: 'mission', mission: { id: 'w1d4m1' } });
   });
 
@@ -117,7 +121,9 @@ describe('доступність місій', () => {
   it('прогрес, збережений до автовідкриття, після завантаження одразу веде в день 4', () => {
     let s = createInitialState(TODAY);
     for (const id of FIRST_THREE_DAYS) s = complete(s, id);
-    const old = JSON.parse(JSON.stringify({ ...s, unlocked: s.unlocked.filter((l) => l !== 'М'), autoUnlocked: undefined }));
+    const old = JSON.parse(
+      JSON.stringify({ ...s, unlocked: s.unlocked.filter((l) => l !== 'М'), autoUnlocked: undefined, sinceReview: undefined }),
+    );
     const loaded = normalizeState(old, TODAY);
     expect(loaded.unlocked).toContain('М');
     expect(recommend(loaded)).toMatchObject({ kind: 'mission', mission: { id: 'w1d4m1' } });
@@ -127,7 +133,7 @@ describe('доступність місій', () => {
     let s = createInitialState(TODAY);
     // Так виглядав прогрес, коли в дні було по дві місії.
     for (const id of ['w1d1m1', 'w1d1m2', 'w1d2m1', 'w1d2m2', 'w1d3m1', 'w1d3m2', 'w1d4m1', 'w1d4m2']) s = complete(s, id);
-    const loaded = normalizeState(JSON.parse(JSON.stringify({ ...s, unlocked: [...s.unlocked, 'М'] })), TODAY);
+    const loaded = normalizeState(JSON.parse(JSON.stringify({ ...s, unlocked: [...s.unlocked, 'М'], sinceReview: undefined })), TODAY);
     expect(loaded.unlocked).toContain('М');
     expect(recommend(loaded)).toMatchObject({ kind: 'mission', mission: { id: 'w1d2m3' } });
     expect(missionAvailability(loaded, WEEK_1_MISSIONS.find((m) => m.id === 'w1d4m2')!)).toBe('done');
@@ -410,5 +416,111 @@ describe('голос дорослого для складів і слів', () =
         if (key.length > 1) expect([...items.syllables, ...items.words], `${w.text}: ${s}`).toContain(key);
       }
     }
+  });
+});
+
+describe('повторення складів і слів', () => {
+  const mission = (id: string) => WEEK_1_MISSIONS.find((m) => m.id === id)!;
+
+  it('вправа записує склад чи слово в інтервальне повторення', () => {
+    let s = createInitialState(TODAY);
+    const items = [
+      ...practisedItems({ kind: 'blend', sounds: ['Л', 'А'] }, false),
+      ...practisedItems({ kind: 'read-word', word: 'Лола' }, true),
+    ];
+    expect(items).toEqual([
+      { text: 'ла', firstTry: true },
+      { text: 'Лола', firstTry: false },
+    ]);
+    expect(practisedItems({ kind: 'match-syllables', syllables: ['ла', 'ло', 'лу'] }, false)).toEqual([]);
+    s = applyExerciseResult(s, { hinted: false, items }, TODAY);
+    expect(s.review['ла']).toMatchObject({ box: 2, due: addDays(TODAY, 1) });
+    expect(s.review['Лола']).toMatchObject({ box: 1, due: TODAY });
+    expect(dueItems(s.review, TODAY, s.unlocked)).toEqual(['Лола']);
+    expect(dueItems(s.review, addDays(TODAY, 1), s.unlocked)).toEqual(['Лола', 'ла']);
+  });
+
+  it('пошкоджені записи повторення відкидаються під час завантаження', () => {
+    const raw = { ...createInitialState(TODAY), review: { ма: { box: 2, due: TODAY }, 'x!': { box: 1, due: TODAY }, ло: { box: 'a' } } };
+    expect(Object.keys(normalizeState(JSON.parse(JSON.stringify(raw)), TODAY).review)).toEqual(['ма']);
+  });
+
+  /** Стан після тижня з підказками всюди: усім складам і словам час повторення. */
+  function struggled(): ProgressState {
+    let s = createInitialState(TODAY);
+    for (const l of ['М', 'С', 'Н', 'К'] as LetterId[]) s = unlockLetter(s, l, TODAY);
+    for (const m of WEEK_1_MISSIONS) {
+      for (const ex of m.exercises) s = applyExerciseResult(s, { hinted: true, items: practisedItems(ex, true) }, TODAY);
+    }
+    return s;
+  }
+
+  it('розминка повторює склади й слова, не беручи нових букв і того, що є в місії', () => {
+    const s = struggled();
+    for (const m of WEEK_1_MISSIONS) {
+      for (let seed = 0; seed < 10; seed++) {
+        const warm = warmUp(s, m, TODAY, makeRng(`${m.id}-${seed}`));
+        expect(warm.length, m.id).toBeLessThanOrEqual(MAX_WARM_UP);
+        expect(warm.length + m.exercises.length, m.id).toBeLessThanOrEqual(14);
+        const allowed = m.requires.filter((l) => !(m.newLetters ?? []).includes(l));
+        const inMission = textsOf(m.exercises);
+        for (const ex of warm) {
+          expect(validateExercise(ex, allowed), `${m.id} ${JSON.stringify(ex)}`).toEqual([]);
+          for (const { text } of practisedItems(ex, false)) expect(inMission.has(text.toLowerCase()), `${m.id} ${text}`).toBe(false);
+        }
+      }
+    }
+    // Місії з 11 вправ - повна розминка: буква, склади чи слова.
+    const warm = warmUp(s, mission('w1d2m2'), TODAY, makeRng('w'));
+    expect(warm).toHaveLength(MAX_WARM_UP);
+    expect(warmUp(s, mission('w1d5m2'), TODAY, makeRng('w')).some((e) => e.kind !== 'find-letter' && e.kind !== 'letter-by-sound')).toBe(true);
+  });
+
+  it('без того, що чекає повторення, розминка лишається короткою', () => {
+    const s = createInitialState(TODAY);
+    expect(warmUp(s, mission('w1d2m2'), addDays(TODAY, 30), makeRng('a')).length).toBeLessThanOrEqual(1);
+  });
+
+  it('у повторенні в лісі першими йдуть склади, яким час повторення', () => {
+    let s = createInitialState(TODAY);
+    s = unlockLetter(s, 'М', TODAY);
+    s = applyExerciseResult(s, { hinted: true, letters: [{ id: 'М', firstTry: true }], items: [{ text: 'ма', firstTry: false }] }, TODAY);
+    for (let seed = 0; seed < 10; seed++) {
+      const blends = buildPracticeMission(s, TODAY, makeRng(`d-${seed}`)).exercises.filter((e) => e.kind === 'read-syllable');
+      expect(blends[0]).toEqual({ kind: 'read-syllable', syllable: 'ма' });
+    }
+  });
+
+  it('у повторенні в лісі не більше 12 вправ, є фраза, коли їх уже можна читати', () => {
+    let s = createInitialState(TODAY);
+    for (const l of ['М', 'С'] as LetterId[]) s = unlockLetter(s, l, TODAY);
+    for (let seed = 0; seed < 25; seed++) {
+      const m = buildPracticeMission(s, TODAY, makeRng(`p-${seed}`));
+      expect(m.exercises.length).toBeLessThanOrEqual(12);
+      expect(m.exercises.some((e) => e.kind === 'read-word' && isPhrase(getWord(e.word)))).toBe(true);
+    }
+    s = unlockLetter(s, 'Н', TODAY);
+    for (let seed = 0; seed < 25; seed++) expect(buildPracticeMission(s, TODAY, makeRng(`f-${seed}`)).exercises.length).toBeLessThanOrEqual(12);
+  });
+
+  it('перед новим днем радить повторення, і воно не показує букву, з якою знайомить наступна місія', () => {
+    let s = complete(complete(createInitialState(TODAY), 'w1d1m1'), 'w1d1m2');
+    expect(recommend(s)).toMatchObject({ kind: 'practice', reason: 'review', nextMission: { id: 'w1d2m1' } });
+    for (let seed = 0; seed < 25; seed++) {
+      const m = buildPracticeMission(s, TODAY, makeRng(`v-${seed}`));
+      expect(m.exercises.length).toBeGreaterThanOrEqual(6);
+      for (const ex of m.exercises) expect(validateExercise(ex, ['А', 'О', 'У', 'И', 'І', 'Е']), JSON.stringify(ex)).toEqual([]);
+    }
+    s = complete(s, 'practice');
+    expect(recommend(s)).toMatchObject({ kind: 'mission', mission: { id: 'w1d2m1' } });
+    // Посеред дня місії йдуть одна за одною.
+    s = complete(s, 'w1d2m1');
+    expect(recommend(s)).toMatchObject({ kind: 'mission', mission: { id: 'w1d2m2' } });
+  });
+
+  it('повторні проходження не наближають повторення в лісі', () => {
+    let s = complete(createInitialState(TODAY), 'w1d1m1');
+    for (let i = 0; i < 5; i++) s = complete(s, 'w1d1m1');
+    expect(s.sinceReview).toBe(1);
   });
 });

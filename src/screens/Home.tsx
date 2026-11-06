@@ -100,7 +100,11 @@ export function Home({ onStart, onParent }: Props) {
             <>
               <h2 className="hero__title">Повторення в лісі</h2>
               <p className="hero__note">
-                {rec.reason === 'week-done' ? 'Тиждень пройдено! Граймо, щоб букви не забувалися.' : 'Пограймо з буквами, які вже знаємо!'}
+                {rec.reason === 'week-done'
+                  ? 'Тиждень пройдено! Граймо, щоб букви не забувалися.'
+                  : rec.reason === 'review'
+                    ? 'Спершу повторимо те, що вже вміємо, а тоді - далі стежкою!'
+                    : 'Пограймо з буквами, які вже знаємо!'}
               </p>
               <button type="button" className="big-button big-button--hero" onClick={() => onStart('practice')}>
                 Грати <span aria-hidden="true">🍄</span>

@@ -1,7 +1,9 @@
-import { BASE_LETTERS, LETTERS, isReadableWith, toLower, type LetterId } from '../content/alphabet';
+import { BASE_LETTERS, LETTERS, isReadableWith, lettersOf, toLower, type LetterId } from '../content/alphabet';
 import type { Exercise, LetterCase, Mission } from '../content/types';
-import { ALL_WORDS, isPhrase, syllablesOf } from '../content/words';
-import type { ProgressState } from './progress';
+import { ALL_WORDS, getWord, isPhrase, syllablesOf } from '../content/words';
+import { WEEK_1_MISSIONS } from '../content/week1';
+import { PRACTICE_ID, type ProgressState } from './progress';
+import { dueItems, isWordItem, textsOf } from './review';
 import { compareCloseness, closeness } from './similar';
 import { isDue } from './srs';
 
@@ -87,20 +89,50 @@ function letterExercise(
   return { kind: variant, target, options: shuffle([target, ...distractors], rng), letterCase };
 }
 
+/** Розминка - не більше трьох вправ, і разом з місією не більше чотирнадцяти. */
+export const MAX_WARM_UP = 3;
+const MAX_WITH_WARM_UP = 14;
+
 /**
- * Розминка перед місією: одна буква, якій настав час повторення за інтервалами.
- * Використовує лише букви, доступні в цій місії.
+ * Розминка перед місією: буква, якій настав час повторення, і склади та слова з минулих місій,
+ * що чекають повторення за інтервалами (спершу ті, що давалися важче).
+ * Використовує лише букви, доступні в цій місії, і не бере нових букв місії.
  */
 export function warmUp(state: ProgressState, mission: Mission, today: string, rng: Rng): Exercise[] {
+  const limit = Math.max(1, Math.min(MAX_WARM_UP, MAX_WITH_WARM_UP - mission.exercises.length));
   const alreadyPractised = new Set<LetterId>(
     mission.exercises.flatMap((e) => (e.kind === 'find-letter' || e.kind === 'letter-by-sound' ? [e.target] : [])),
   );
   const pool = mission.requires.filter((l) => state.unlocked.includes(l));
-  const candidate = dueLetters(state, today, [...(mission.newLetters ?? []), ...alreadyPractised]).find((l) =>
-    pool.includes(l),
-  );
-  if (!candidate) return [];
-  return [letterExercise(candidate, pool, rng, rng() < 0.5 ? 'find-letter' : 'letter-by-sound')];
+  // Нову букву місії до знайомства з нею не показуємо навіть як зайвий варіант.
+  const known = pool.filter((l) => !(mission.newLetters ?? []).includes(l));
+  const out: Exercise[] = [];
+  const letter = dueLetters(state, today, [...(mission.newLetters ?? []), ...alreadyPractised]).find((l) => known.includes(l));
+  if (letter) out.push(letterExercise(letter, known, rng, rng() < 0.5 ? 'find-letter' : 'letter-by-sound'));
+
+  for (const text of dueItems(state.review, today, known, textsOf(mission.exercises))) {
+    if (out.length >= limit) break;
+    const ex = reviewExercise(text, known, rng);
+    if (ex) out.push(ex);
+  }
+  return out;
+}
+
+/**
+ * Вправа на повторення складу чи слова. Навперемін: прочитати саму або знайти на слух,
+ * щоб повторення не було одноманітним.
+ */
+export function reviewExercise(text: string, letters: readonly LetterId[], rng: Rng): Exercise | undefined {
+  if (!isReadableWith(text, letters)) return undefined;
+  const byEar = rng() < 0.5;
+  if (!isWordItem(text)) {
+    if (!lettersOf(text).some((l) => LETTERS[l].kind === 'vowel')) return undefined;
+    const pool = [...availableSyllables(letters), ...closedSyllables(letters)];
+    return (byEar && earExercise(text, pool, rng)) || { kind: 'read-syllable', syllable: text };
+  }
+  const phrase = isPhrase(getWord(text));
+  const pool = ALL_WORDS.filter((w) => isPhrase(w) === phrase && isReadableWith(w.text, letters)).map((w) => w.text);
+  return (byEar && earExercise(text, pool, rng)) || { kind: 'read-word', word: text };
 }
 
 /** Усі відкриті склади «приголосний + голосний» із доступних букв. */
@@ -144,45 +176,63 @@ function readingScore(state: ProgressState, text: string): number {
 
 const PRACTICE_STICKERS = ['🍄', '🌸', '🍁', '🌰', '🐌', '🐢', '🐦', '🦆', '🐻', '🐺', '🦡', '🌻'];
 
+/** Менше вправ - це вже не прогулянка лісом: добираємо буквами. */
+const MIN_PRACTICE = 6;
+/** Далекий кінець черги для текстів, яким ще не час повторення. */
+const NOT_DUE = 1e6;
+
 /**
  * «Повторення в лісі» - місія, яку щоразу складаємо з того, що дитині вже доступно:
- * букви, яким час повторення, склади, що читаються найважче, і слово з банку слів.
+ * букви, яким час повторення, склади й слова, яким час повторення або що читаються найважче,
+ * і слова та фрази з банку слів.
+ * Нову букву наступної місії не чіпаємо: з нею знайомить сама місія.
  */
-export function buildPracticeMission(state: ProgressState, today: string, rng: Rng): Mission {
-  const letters = state.unlocked;
+export function buildPracticeMission(state: ProgressState, today: string, rng: Rng, missions: Mission[] = WEEK_1_MISSIONS): Mission {
+  const next = missions.find((m) => !state.missions[m.id]?.completions);
+  const held = (next?.newLetters ?? []).filter((l) => (state.letters[l]?.seen ?? 0) === 0);
+  const letters = state.unlocked.filter((l) => !held.includes(l));
   const exercises: Exercise[] = [];
 
   const fresh = letters.find((l) => !BASE_LETTERS.includes(l) && (state.letters[l]?.seen ?? 0) === 0);
   if (fresh) exercises.push({ kind: 'intro-letter', letter: fresh }, letterExercise(fresh, letters, rng, 'find-letter'));
 
-  const due = dueLetters(state, today, fresh ? [fresh] : []);
-  const focus = (due.length ? due : shuffle(introducedLetters(state), rng)).slice(0, 2);
+  const due = dueLetters(state, today, [...(fresh ? [fresh] : []), ...held]);
+  const introduced = introducedLetters(state).filter((l) => letters.includes(l) && LETTERS[l].kind !== 'sign');
+  const focus = (due.length ? due : shuffle(introduced, rng)).slice(0, fresh ? 1 : 2);
   focus.forEach((l, i) =>
     exercises.push(letterExercise(l, letters, rng, i % 2 === 0 ? 'letter-by-sound' : 'find-letter', i === 1 ? 'lower' : undefined)),
   );
 
-  const syllables = availableSyllables(letters.filter((l) => l !== fresh));
-  const byDifficulty = shuffle(syllables, rng).sort((a, b) => readingScore(state, a) - readingScore(state, b));
+  const known = letters.filter((l) => l !== fresh);
+  const waiting = dueItems(state.review, today, known);
+  const rank = (text: string) => {
+    const i = waiting.indexOf(text);
+    return i === -1 ? NOT_DUE : i;
+  };
+  const harder = (a: string, b: string) => rank(a) - rank(b) || readingScore(state, a) - readingScore(state, b);
+
+  const syllables = availableSyllables(known);
+  const byDifficulty = shuffle(syllables, rng).sort(harder);
   // Злиття двох звуків дається найважче, тож два найважчі склади спершу з'єднуємо доріжкою, а потім читаємо.
   for (const s of byDifficulty.slice(0, 2)) {
     const [c, v] = [...s.toLocaleUpperCase('uk-UA')] as LetterId[];
     exercises.push({ kind: 'blend', sounds: [c, v] }, { kind: 'read-syllable', syllable: s });
   }
   if (syllables.length >= 3) exercises.push({ kind: 'match-syllables', syllables: shuffle(syllables, rng).slice(0, 3) });
-  const known = letters.filter((l) => l !== fresh);
   const heard = byDifficulty[2] ?? byDifficulty[0];
   const earSyllable = heard && earExercise(heard, [...syllables, ...closedSyllables(known)], rng);
   if (earSyllable) exercises.push(earSyllable);
 
   const readable = ALL_WORDS.filter((w) => isReadableWith(w.text, known));
-  const ranked = shuffle(readable, rng).sort((a, b) => readingScore(state, a.text) - readingScore(state, b.text));
+  const ranked = shuffle(readable, rng).sort((a, b) => harder(a.text, b.text));
   const word = ranked[0];
   const singles = readable.filter((w) => !isPhrase(w)).map((w) => w.text);
   const earWord = ranked.find((w) => w !== word && !isPhrase(w));
   const earWordEx = earWord && earExercise(earWord.text, singles, rng);
   if (earWordEx) exercises.push(earWordEx);
   if (word) {
-    const parts = syllablesOf(word);
+    // Імена пишуться з великої («Ло-ла»), а склади-картки - з малої.
+    const parts = syllablesOf(word).map(toLower);
     if (parts.length >= 2 && !isPhrase(word)) {
       const distractors = shuffle(
         syllables.filter((s) => !parts.includes(s)),
@@ -197,11 +247,30 @@ export function buildPracticeMission(state: ProgressState, today: string, rng: R
       exercises.push({ kind: 'read-word', word: word.text });
     }
   }
+  // Ще одне читання: фраза, коли вже є з чого їх складати, або слово, якому час повторення.
+  const extra = ranked.find((w) => w !== word && w !== earWord && (isPhrase(w) || rank(w.text) !== NOT_DUE));
+  if (extra) exercises.push({ kind: 'read-word', word: extra.text });
+
+  // Самі голосні (ще до першої приголосної): співаємо пари і шукаємо букви.
+  if (exercises.length < MIN_PRACTICE) {
+    const vowels = known.filter((l) => LETTERS[l].kind === 'vowel');
+    if (vowels.length >= 3 && syllables.length < 3) {
+      exercises.push({ kind: 'match-syllables', syllables: shuffle(vowels, rng).slice(0, 3).map(toLower) });
+    }
+    const more = shuffle(
+      introduced.filter((l) => !focus.includes(l)),
+      rng,
+    );
+    for (const [i, l] of more.entries()) {
+      if (exercises.length >= MIN_PRACTICE) break;
+      exercises.push(letterExercise(l, letters, rng, i % 2 === 0 ? 'find-letter' : 'letter-by-sound', i % 2 === 0 ? 'lower' : undefined));
+    }
+  }
 
   const sticker = PRACTICE_STICKERS.find((s) => !state.stickers.includes(s)) ?? PRACTICE_STICKERS[Math.floor(rng() * PRACTICE_STICKERS.length)];
 
   return {
-    id: 'practice',
+    id: PRACTICE_ID,
     day: 0,
     order: 1,
     title: 'Повторення в лісі',
