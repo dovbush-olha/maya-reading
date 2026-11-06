@@ -61,6 +61,18 @@ export interface MatchSyllablesExercise {
 }
 
 /**
+ * Дорослий читає склад, слово чи фразу (або звучить його запис) - дитина вибирає, що почула.
+ * Перевіряє зв'язок «звучання → написане», без вимоги читати вголос.
+ */
+export interface PickByEarExercise {
+  kind: 'pick-by-ear';
+  /** Що звучить: склад, слово чи фраза (слова й фрази - з банку слів). */
+  text: string;
+  /** Написані варіанти, серед них і правильний. */
+  options: string[];
+}
+
+/**
  * Прочитай і вибери картинку. Не пишеться в контенті вручну: так перетворюється
  * «прочитай слово», коли дитина грається сама і дорослий не може відмітити читання.
  */
@@ -74,6 +86,7 @@ export interface PickPictureExercise {
 export type Exercise =
   | IntroLetterExercise
   | PickPictureExercise
+  | PickByEarExercise
   | FindLetterExercise
   | LetterBySoundExercise
   | BlendExercise

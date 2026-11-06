@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { NOT_YET_STUDIED, isReadableWith, type LetterId } from '../content/alphabet';
-import type { BuildWordExercise, Exercise } from '../content/types';
+import type { BuildWordExercise, Exercise, PickByEarExercise } from '../content/types';
 import { validateExercise } from '../content/validate';
 import { WEEK_1, WEEK_1_MISSIONS } from '../content/week1';
 import { adviseNextLetter, missionAvailability, recommend } from './availability';
-import { buildPracticeMission, makeRng, warmUp } from './generate';
-import { adaptForSolo, canPickPicture, closeness, preferRecordedVoice } from './solo';
+import { buildPracticeMission, earExercise, makeRng, warmUp } from './generate';
+import { adaptForSolo, canPickPicture, preferRecordedVoice } from './solo';
+import { closeness } from './similar';
 import { ALL_WORDS, getWord, isPhrase, syllablesOf } from '../content/words';
 import { sayKey, voiceItems } from './voice';
 import {
@@ -212,6 +213,21 @@ describe('згенеровані вправи', () => {
     }
   });
 
+  it('у практиці є «послухай і вибери» для складу і для слова', () => {
+    let s = createInitialState(TODAY);
+    for (const l of ['М', 'С'] as LetterId[]) s = unlockLetter(s, l, TODAY);
+    const ears = buildPracticeMission(s, TODAY, makeRng('ear')).exercises.filter((e) => e.kind === 'pick-by-ear');
+    expect(ears).toHaveLength(2);
+  });
+
+  it('«послухай і вибери»: зайві варіанти найсхожіші на правильний', () => {
+    const ex = earExercise('сом', ['сон', 'мама', 'сік', 'лимон', 'сом'], makeRng('a'));
+    expect(ex).toEqual({ kind: 'pick-by-ear', text: 'сом', options: ['сом', expect.any(String), expect.any(String)] });
+    if (ex?.kind === 'pick-by-ear') expect(ex.options).toEqual(expect.arrayContaining(['сік', 'сон']));
+    expect(earExercise('сом', ['сон'], makeRng('a'))).toBeUndefined();
+    expect(validateExercise({ kind: 'pick-by-ear', text: 'ла', options: ['ло', 'лу'] }, ['Л', 'А', 'О', 'У'])).not.toEqual([]);
+  });
+
   it('слова в практиці читаються відкритими буквами', () => {
     const s = createInitialState(TODAY);
     const m = buildPracticeMission(s, TODAY, makeRng('x'));
@@ -306,6 +322,14 @@ describe('режим «сама»', () => {
     const phrase: BuildWordExercise = { kind: 'build-word', word: 'Мама мила', distractors: ['мо'] };
     expect(adaptForSolo(phrase, never, makeRng('a'), (t) => t === 'Мама мила').kind).toBe('build-word');
     expect(adaptForSolo(phrase, never, makeRng('a')).kind).not.toBe('build-word');
+  });
+
+  it('«послухай і вибери» сама - лише коли є запис, інакше читаємо', () => {
+    const syl: PickByEarExercise = { kind: 'pick-by-ear', text: 'ма', options: ['ма', 'мо'] };
+    expect(adaptForSolo(syl, never, makeRng('a'), () => true)).toEqual(syl);
+    expect(adaptForSolo(syl, never, makeRng('a'))).toEqual({ kind: 'read-syllable', syllable: 'ма' });
+    expect(adaptForSolo({ kind: 'pick-by-ear', text: 'сом', options: ['сом', 'сон'] }, never, makeRng('a')).kind).toBe('pick-picture');
+    expect(adaptForSolo({ kind: 'pick-by-ear', text: 'Алла', options: ['Алла', 'Елла'] }, never, makeRng('a'))).toEqual({ kind: 'read-word', word: 'Алла' });
   });
 });
 

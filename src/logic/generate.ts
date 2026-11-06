@@ -2,6 +2,7 @@ import { BASE_LETTERS, LETTERS, isReadableWith, toLower, type LetterId } from '.
 import type { Exercise, LetterCase, Mission } from '../content/types';
 import { ALL_WORDS, isPhrase, syllablesOf } from '../content/words';
 import type { ProgressState } from './progress';
+import { compareCloseness, closeness } from './similar';
 import { isDue } from './srs';
 
 export type Rng = () => number;
@@ -41,6 +42,8 @@ export function prepareExercise(ex: Exercise, rng: Rng): Exercise {
       return { ...ex, syllables: shuffle(ex.syllables, rng) };
     case 'build-word':
       return { ...ex, distractors: shuffle(ex.distractors, rng) };
+    case 'pick-by-ear':
+      return { ...ex, options: shuffle(ex.options, rng) };
     default:
       return ex;
   }
@@ -114,6 +117,24 @@ export function closedSyllables(letters: readonly LetterId[]): string[] {
   return vowels.flatMap((v) => consonants.map((c) => toLower(v + c)));
 }
 
+/**
+ * «Послухай і вибери» з двома зайвими варіантами, найсхожішими на правильний:
+ * «ма» поруч із «мо» і «ам», «сом» поруч із «сон» - щоб треба було вслухатися, а не вгадувати.
+ */
+export function earExercise(text: string, pool: readonly string[], rng: Rng): Exercise | undefined {
+  const target = toLower(text);
+  const distractors = shuffle(
+    pool.filter((p) => toLower(p) !== target),
+    rng,
+  )
+    .map((p) => ({ p, key: closeness(target, toLower(p)) }))
+    .sort((a, b) => compareCloseness(a.key, b.key))
+    .slice(0, 2)
+    .map((x) => x.p);
+  if (distractors.length < 2) return undefined;
+  return { kind: 'pick-by-ear', text, options: [text, ...distractors] };
+}
+
 function readingScore(state: ProgressState, text: string): number {
   const log = state.reading[text];
   if (!log) return -1;
@@ -148,9 +169,18 @@ export function buildPracticeMission(state: ProgressState, today: string, rng: R
     exercises.push({ kind: 'blend', sounds: [c, v] }, { kind: 'read-syllable', syllable: s });
   }
   if (syllables.length >= 3) exercises.push({ kind: 'match-syllables', syllables: shuffle(syllables, rng).slice(0, 3) });
+  const known = letters.filter((l) => l !== fresh);
+  const heard = byDifficulty[2] ?? byDifficulty[0];
+  const earSyllable = heard && earExercise(heard, [...syllables, ...closedSyllables(known)], rng);
+  if (earSyllable) exercises.push(earSyllable);
 
-  const readable = ALL_WORDS.filter((w) => isReadableWith(w.text, letters.filter((l) => l !== fresh)));
-  const word = shuffle(readable, rng).sort((a, b) => readingScore(state, a.text) - readingScore(state, b.text))[0];
+  const readable = ALL_WORDS.filter((w) => isReadableWith(w.text, known));
+  const ranked = shuffle(readable, rng).sort((a, b) => readingScore(state, a.text) - readingScore(state, b.text));
+  const word = ranked[0];
+  const singles = readable.filter((w) => !isPhrase(w)).map((w) => w.text);
+  const earWord = ranked.find((w) => w !== word && !isPhrase(w));
+  const earWordEx = earWord && earExercise(earWord.text, singles, rng);
+  if (earWordEx) exercises.push(earWordEx);
   if (word) {
     const parts = syllablesOf(word);
     if (parts.length >= 2 && !isPhrase(word)) {

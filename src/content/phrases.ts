@@ -20,6 +20,7 @@ export const INSTRUCTIONS: Record<ExerciseKind, string> = {
   'build-word': 'Склади слово зі складів.',
   'match-syllables': 'Знайди однакові склади.',
   'pick-picture': 'Прочитай і знайди картинку.',
+  'pick-by-ear': 'Послухай і знайди, що прозвучало.',
 };
 
 export const PRAISE = [
@@ -65,6 +66,8 @@ export const HINTS = {
   pickWrong: 'Прочитай ще раз, по складах.',
   pickGlow: 'Ось потрібна картинка світиться.',
   soloRead: 'А тепер прочитай уголос!',
+  earWrong: 'Послухай ще раз і подивись на перший склад.',
+  earGlow: 'Ось воно світиться! Торкнись.',
 };
 
 export const GREETINGS = [

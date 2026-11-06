@@ -4,6 +4,7 @@ import { BuildWord } from './BuildWord';
 import { ChooseLetter } from './ChooseLetter';
 import { IntroLetter } from './IntroLetter';
 import { MatchSyllables } from './MatchSyllables';
+import { PickByEar } from './PickByEar';
 import { PickPicture } from './PickPicture';
 import { ReadItem } from './ReadItem';
 import type { ExerciseProps } from './types';
@@ -28,5 +29,7 @@ export function ExerciseView(props: ExerciseProps<Exercise>) {
       return <MatchSyllables {...props} exercise={ex} />;
     case 'pick-picture':
       return <PickPicture {...props} exercise={ex} />;
+    case 'pick-by-ear':
+      return <PickByEar {...props} exercise={ex} />;
   }
 }

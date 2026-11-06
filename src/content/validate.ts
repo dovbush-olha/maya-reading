@@ -23,6 +23,8 @@ export function childFacingTexts(ex: Exercise): string[] {
       return [ex.word, ...wordSyllables(ex.word), ...ex.distractors];
     case 'match-syllables':
       return [...ex.syllables];
+    case 'pick-by-ear':
+      return [...ex.options];
   }
 }
 
@@ -90,6 +92,16 @@ export function validateExercise(ex: Exercise, allowed: readonly LetterId[]): st
       if (!ex.options.includes(ex.word)) errors.push(`${label}: варіанти не містять правильне слово`);
       const pics = ex.options.map((o) => WORDS[o]?.picture);
       if (new Set(pics).size !== pics.length) errors.push(`${label}: картинки варіантів повторюються`);
+      break;
+    }
+    case 'pick-by-ear': {
+      const lower = ex.options.map(toLower);
+      if (!lower.includes(toLower(ex.text))) errors.push(`${label}: варіанти не містять «${ex.text}»`);
+      if (ex.options.length < 2 || ex.options.length > 3) errors.push(`${label}: має бути 2-3 варіанти, а є ${ex.options.length}`);
+      if (new Set(lower).size !== lower.length) errors.push(`${label}: варіанти повторюються`);
+      // Звучить або склад (одна голосна), або слово з банку слів.
+      const vowels = safeLetters(ex.text).filter((l) => LETTERS[l].kind === 'vowel').length;
+      if (!WORDS[ex.text] && vowels !== 1) errors.push(`${label}: «${ex.text}» - не склад і не слово з банку слів`);
       break;
     }
     case 'intro-letter':

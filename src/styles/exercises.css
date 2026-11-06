@@ -741,6 +741,47 @@
   animation: glow 1.4s ease-in-out infinite;
 }
 
+/* ---------- Послухай і вибери ---------- */
+
+.ear-row {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: clamp(12px, 2.4vw, 22px);
+}
+
+/* Слова й фрази - стовпчиком однакових карток, щоб ряд не розсипався 2 + 1. */
+.ear-row--long {
+  flex-direction: column;
+  align-items: stretch;
+  width: min(100%, 460px);
+  margin-inline: auto;
+}
+
+.ear-tile {
+  transition: transform 0.15s, opacity 0.3s, border-color 0.2s;
+}
+
+.ear-tile:not(:disabled):hover {
+  transform: translateY(-3px);
+}
+
+.ear-tile--tried {
+  animation: wiggle 0.45s ease;
+  opacity: 0.35;
+}
+
+.ear-tile--dim,
+.ear-tile--rest {
+  opacity: 0.3;
+}
+
+.ear-tile--correct {
+  border-color: var(--leaf);
+  background: var(--leaf-pale);
+  animation: correct 0.5s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
 /* ---------- Пари складів ---------- */
 
 .match-grid {

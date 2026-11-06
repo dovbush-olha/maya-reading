@@ -117,6 +117,12 @@ describe('перший тиждень', () => {
     }
   });
 
+  it('від дня 2 у кожній місії є «послухай і вибери»', () => {
+    for (const m of WEEK_1.slice(1).flatMap((d) => d.missions)) {
+      expect(m.exercises.some((e) => e.kind === 'pick-by-ear'), m.id).toBe(true);
+    }
+  });
+
   it('з Л є слова без подвоєних букв: кожен склад - два звуки', () => {
     const lWords = new Set(singleWords(WEEK_1.slice(1, 3).flatMap(exercisesOf)));
     const plain = [...lWords].filter((w) => !/(.)\1/iu.test(w));

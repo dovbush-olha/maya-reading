@@ -20,6 +20,8 @@ const syllable = (s: string): Exercise => ({ kind: 'read-syllable', syllable: s 
 const word = (w: string): Exercise => ({ kind: 'read-word', word: w });
 const build = (w: string, distractors: string[]): Exercise => ({ kind: 'build-word', word: w, distractors });
 const match = (...syllables: string[]): Exercise => ({ kind: 'match-syllables', syllables });
+/** Звучить `text` (запис дорослого або вживу) - дитина вибирає його серед `others`. */
+const byEar = (text: string, ...others: string[]): Exercise => ({ kind: 'pick-by-ear', text, options: [text, ...others] });
 
 const VOWELS: LetterId[] = ['А', 'О', 'У', 'И', 'І', 'Е'];
 const withL: LetterId[] = [...VOWELS, 'Л'];
@@ -115,6 +117,7 @@ export const WEEK_1: Day[] = [
           blend('Л', 'У'),
           syllable('лу'),
           match('ла', 'ло', 'лу'),
+          byEar('ла', 'ло', 'лу'),
         ],
       },
       {
@@ -138,6 +141,7 @@ export const WEEK_1: Day[] = [
           syllable('ла'),
           syllable('ло'),
           find('Л', ['Л', 'А', 'И'], 'lower'),
+          byEar('лі', 'ли', 'ле'),
         ],
       },
       {
@@ -162,6 +166,7 @@ export const WEEK_1: Day[] = [
           build('Лола', ['ле', 'ли']),
           build('алло', ['ла', 'лу']),
           build('але', ['ла', 'ло']),
+          byEar('ал', 'ла', 'ол'),
         ],
       },
     ],
@@ -193,6 +198,7 @@ export const WEEK_1: Day[] = [
           build('лила', ['лі', 'ле']),
           syllable('ли'),
           word('лила'),
+          byEar('Лола', 'Лілі', 'Олі'),
         ],
       },
       {
@@ -216,6 +222,7 @@ export const WEEK_1: Day[] = [
           build('Елла', ['ал', 'ло']),
           word('алло'),
           word('Лола'),
+          byEar('Алла', 'Елла', 'алло'),
         ],
       },
       {
@@ -240,6 +247,7 @@ export const WEEK_1: Day[] = [
           word('Лола лила'),
           build('Лола лила', ['лі', 'ле']),
           bySound('И', ['И', 'І', 'Л']),
+          byEar('у Олі', 'у Лоли', 'у Алли'),
         ],
       },
     ],
@@ -272,6 +280,7 @@ export const WEEK_1: Day[] = [
           blend('М', 'И'),
           syllable('ми'),
           match('ма', 'мо', 'ми'),
+          byEar('мо', 'ма', 'ми'),
         ],
       },
       {
@@ -295,6 +304,7 @@ export const WEEK_1: Day[] = [
           build('мамо', ['мі', 'ми']),
           word('ми'),
           word('Емма'),
+          byEar('ам', 'ма', 'ом'),
         ],
       },
       {
@@ -318,6 +328,7 @@ export const WEEK_1: Day[] = [
           word('малі'),
           build('мило', ['ла', 'мо']),
           word('мале'),
+          byEar('мило', 'мила', 'мало'),
         ],
       },
     ],
@@ -349,6 +360,7 @@ export const WEEK_1: Day[] = [
           blend('С', 'И'),
           syllable('си'),
           match('са', 'со', 'си'),
+          byEar('со', 'са', 'си'),
         ],
       },
       {
@@ -372,6 +384,7 @@ export const WEEK_1: Day[] = [
           word('ліс'),
           build('сало', ['со', 'лі']),
           build('сила', ['са', 'ло']),
+          byEar('лис', 'ліс', 'сом'),
         ],
       },
       {
@@ -396,6 +409,7 @@ export const WEEK_1: Day[] = [
           build('Лама мала', ['мо', 'лі']),
           word('Оса мала'),
           word('Лис у лісі'),
+          byEar('Мама мила', 'Міла сама', 'Лама мала'),
         ],
       },
     ],
@@ -420,7 +434,7 @@ export const WEEK_1: Day[] = [
           bySound('С', ['С', 'М', 'О']),
           intro('Н'),
           find('Н', ['Н', 'М']),
-          find('Н', ['Н', 'И', 'Л']),
+          byEar('на', 'ма', 'ла'),
           bySound('Н', ['Н', 'М', 'Л']),
           blend('Н', 'А'),
           syllable('на'),
@@ -452,6 +466,7 @@ export const WEEK_1: Day[] = [
           build('Ніна', ['но', 'ни']),
           build('сани', ['со']),
           build('лимон', ['ла', 'ни']),
+          byEar('сон', 'сом', 'ніс'),
         ],
       },
       {
@@ -474,6 +489,7 @@ export const WEEK_1: Day[] = [
           word('На сіні лис'),
           build('У Ніни лимон', ['на', 'ло']),
           word('Ніна налила'),
+          byEar('Ніна налила', 'Ніна мала', 'Міла сама'),
         ],
       },
     ],
@@ -498,7 +514,7 @@ export const WEEK_1: Day[] = [
           bySound('Н', ['Н', 'М', 'Л']),
           intro('К'),
           find('К', ['К', 'Н']),
-          find('К', ['К', 'Л', 'И']),
+          byEar('ко', 'ок', 'кі'),
           bySound('К', ['К', 'С', 'Л']),
           blend('К', 'О'),
           syllable('ко'),
@@ -529,7 +545,7 @@ export const WEEK_1: Day[] = [
           build('сумка', ['ма']),
           word('лук'),
           build('миска', ['ма', 'ко']),
-          word('маска'),
+          byEar('маска', 'миска', 'масло'),
           word('кулак'),
         ],
       },
@@ -554,6 +570,7 @@ export const WEEK_1: Day[] = [
           build('Молоко Мілі', ['ма', 'ли']),
           build('У мами сумка', ['мо', 'ку']),
           word('У Ніни носок'),
+          byEar('молоко', 'колесо', 'коло'),
         ],
       },
     ],
