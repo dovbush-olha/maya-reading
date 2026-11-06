@@ -369,6 +369,10 @@ describe('голос дорослого для складів і слів', () =
     expect(items.words).toEqual(expect.arrayContaining(['мама', 'мама мила', 'алла']));
   });
 
+  it('містить і зворотні склади з голосної: «ам», «ум», «ім»', () => {
+    expect(items.syllables).toEqual(expect.arrayContaining(['ам', 'ом', 'ум', 'им', 'ім', 'ем', 'ул', 'іл']));
+  });
+
   it('лише те, що читається доступними буквами, без повторів', () => {
     for (const t of [...items.syllables, ...items.words]) expect(isReadableWith(t, letters), t).toBe(true);
     expect(items.words).not.toContain('оса');

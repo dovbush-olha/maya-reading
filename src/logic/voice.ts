@@ -1,7 +1,7 @@
 import { isReadableWith, lettersOf, toLower, type LetterId } from '../content/alphabet';
 import type { Mission } from '../content/types';
 import { ALL_WORDS, syllablesOf } from '../content/words';
-import { availableSyllables } from './generate';
+import { availableSyllables, closedSyllables } from './generate';
 
 /** Ключ запису звуку букви. */
 export const soundKey = (l: LetterId) => `sound:${l}`;
@@ -35,7 +35,7 @@ function missionSyllables(missions: readonly Mission[]): string[] {
 
 /**
  * Що дорослий може записати своїм голосом, щоб дитина почула, як правильно:
- * склади з місій, усі відкриті склади з доступних букв, склади слів і самі слова.
+ * склади з місій, усі склади з двох доступних букв (і «ма», і «ам»), склади слів і самі слова.
  * Лише те, що читається доступними буквами.
  */
 export function voiceItems(letters: readonly LetterId[], missions: readonly Mission[]): VoiceItems {
@@ -43,7 +43,7 @@ export function voiceItems(letters: readonly LetterId[], missions: readonly Miss
   const words = new Set(entries.map((w) => toLower(w.text)));
   // Слово з одного складу («ми», «ліс») - вже серед слів, тим самим записом.
   const syllables = new Set(
-    [...missionSyllables(missions), ...availableSyllables(letters), ...entries.flatMap(syllablesOf)]
+    [...missionSyllables(missions), ...availableSyllables(letters), ...closedSyllables(letters), ...entries.flatMap(syllablesOf)]
       .map(toLower)
       .filter((s) => isReadableWith(s, letters) && lettersOf(s).length > 1 && !words.has(s)),
   );

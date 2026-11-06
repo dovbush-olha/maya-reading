@@ -107,6 +107,13 @@ export function availableSyllables(letters: readonly LetterId[]): string[] {
   return consonants.flatMap((c) => vowels.map((v) => toLower(c + v)));
 }
 
+/** Усі зворотні склади «голосний + приголосний» із доступних букв: «ан», «ок», «ай». */
+export function closedSyllables(letters: readonly LetterId[]): string[] {
+  const vowels = letters.filter((l) => LETTERS[l].kind === 'vowel');
+  const consonants = letters.filter((l) => LETTERS[l].kind === 'consonant');
+  return vowels.flatMap((v) => consonants.map((c) => toLower(v + c)));
+}
+
 function readingScore(state: ProgressState, text: string): number {
   const log = state.reading[text];
   if (!log) return -1;
