@@ -135,12 +135,11 @@ export function buildPracticeMission(state: ProgressState, today: string, rng: R
 
   const syllables = availableSyllables(letters.filter((l) => l !== fresh));
   const byDifficulty = shuffle(syllables, rng).sort((a, b) => readingScore(state, a) - readingScore(state, b));
-  const [s1, s2] = byDifficulty;
-  if (s1) {
-    const [c, v] = [...s1.toLocaleUpperCase('uk-UA')] as LetterId[];
-    exercises.push({ kind: 'blend', sounds: [c, v] }, { kind: 'read-syllable', syllable: s1 });
+  // Злиття двох звуків дається найважче, тож два найважчі склади спершу з'єднуємо доріжкою, а потім читаємо.
+  for (const s of byDifficulty.slice(0, 2)) {
+    const [c, v] = [...s.toLocaleUpperCase('uk-UA')] as LetterId[];
+    exercises.push({ kind: 'blend', sounds: [c, v] }, { kind: 'read-syllable', syllable: s });
   }
-  if (s2) exercises.push({ kind: 'read-syllable', syllable: s2 });
   if (syllables.length >= 3) exercises.push({ kind: 'match-syllables', syllables: shuffle(syllables, rng).slice(0, 3) });
 
   const readable = ALL_WORDS.filter((w) => isReadableWith(w.text, letters.filter((l) => l !== fresh)));

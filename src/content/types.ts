@@ -89,7 +89,8 @@ export type MissionGoal = 'learn' | 'reinforce' | 'practice';
 export interface Mission {
   id: string;
   day: number;
-  order: 1 | 2;
+  /** Номер місії в дні, з 1. */
+  order: number;
   title: string;
   goal: MissionGoal;
   /** Усі букви, які трапляються в місії. Місія відкривається, лише коли всі вони доступні дитині. */
@@ -108,7 +109,8 @@ export interface Day {
   title: string;
   /** Що зображено на камінці мапи (буква або символ). */
   badge: string;
-  missions: [Mission, Mission];
+  /** Перша місія навчає, наступні закріплюють. */
+  missions: [Mission, ...Mission[]];
 }
 
 export interface WordEntry {

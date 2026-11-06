@@ -282,84 +282,105 @@
 
 /* ---------- З'єднай звуки ---------- */
 
-.blend {
+/*
+ * Доріжка між двома буквами. Дитина веде кульку пальчиком від першої букви до другої
+ * (--p - скільки проїхала, від 0 до 1), а заливка тягнеться за кулькою, як протяжний звук.
+ */
+.slide {
+  --ball: 34px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: clamp(10px, 2vw, 20px);
+  width: min(100%, 560px);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-.blend__tile {
-  width: clamp(120px, 18vw, 160px);
+.slide__tile {
+  flex: none;
+  width: clamp(104px, 16vw, 140px);
   aspect-ratio: 1;
   border-radius: var(--radius-md);
   border: 3px solid #f1e5d4;
   background: #fff;
   display: grid;
   place-items: center;
+  padding: 0;
   box-shadow: var(--shadow-tile);
-  transition: transform 0.5s cubic-bezier(0.5, 0, 0.2, 1.3), border-color 0.2s, background 0.2s;
+  transition: border-color 0.2s, background 0.2s;
 }
 
-.blend__tile--vowel .letter-glyph {
+.slide__tile--vowel .letter-glyph {
   color: var(--vowel);
 }
 
-.blend__tile--consonant .letter-glyph {
+.slide__tile--consonant .letter-glyph {
   color: var(--consonant);
 }
 
-.blend__tile--next {
+.slide__tile--a {
   border-color: var(--sun);
+  cursor: grab;
+}
+
+.slide--idle .slide__tile--a {
   animation: glow 1.4s ease-in-out infinite;
 }
 
-.blend--step-1 .blend__tile--a,
-.blend--step-2 .blend__tile {
-  background: var(--leaf-pale);
-  border-color: #cfe6c5;
+.slide--drag .slide__tile--a,
+.slide--auto .slide__tile--a {
+  background: var(--sun-pale);
 }
 
-.blend__bridge {
-  display: flex;
-  gap: 8px;
-  transition: opacity 0.3s, width 0.5s;
-  width: clamp(60px, 10vw, 110px);
-  justify-content: center;
+.slide__track {
+  position: relative;
+  flex: 1;
+  min-width: 90px;
+  height: 14px;
+  margin: 0 -4px;
+  border-radius: 999px;
+  background: repeating-linear-gradient(90deg, var(--fox-soft) 0 12px, transparent 12px 22px);
 }
 
-.blend__bridge span {
-  width: 12px;
-  height: 12px;
+.slide__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(var(--p) * 100%);
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--sun), var(--fox));
+}
+
+.slide__ball {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--p) * 100%);
+  width: var(--ball);
+  height: var(--ball);
+  margin: calc(var(--ball) / -2) 0 0 calc(var(--ball) / -2);
   border-radius: 50%;
-  background: var(--fox-soft);
+  background: radial-gradient(circle at 35% 35%, #fff6d6 0 18%, var(--sun) 45%, var(--fox) 100%);
+  box-shadow: 0 0 0 4px #fff, 0 6px 14px -4px rgba(236, 127, 60, 0.8);
 }
 
-.blend--step-1 .blend__bridge span {
-  animation: paw-step 1.2s ease-in-out infinite;
+/* Відпустила посередині - кулька плавно котиться назад. */
+.slide--idle .slide__fill {
+  transition: width 0.4s ease;
 }
 
-.blend--step-1 .blend__bridge span:nth-child(2) {
-  animation-delay: 0.2s;
+.slide--idle .slide__ball {
+  transition: left 0.4s ease;
+  animation: slide-nudge 1.6s ease-in-out infinite;
 }
 
-.blend--step-1 .blend__bridge span:nth-child(3) {
-  animation-delay: 0.4s;
-}
-
-.blend--step-2 .blend__bridge {
-  opacity: 0;
-  width: 0;
-}
-
-.blend--step-2 {
-  gap: 0;
-}
-
-@keyframes paw-step {
-  50% {
-    background: var(--fox);
-    transform: scale(1.3);
+/* Кулька ніби кличе: «тягни мене вправо». */
+@keyframes slide-nudge {
+  0%,
+  60%,
+  100% {
+    transform: translateX(0);
+  }
+  30% {
+    transform: translateX(14px);
   }
 }
 
@@ -368,9 +389,6 @@
   align-items: center;
   gap: 16px;
   animation: pop-in 0.45s cubic-bezier(0.2, 1.6, 0.4, 1) both;
-  padding: 6px 30px;
-  border-radius: var(--radius-md);
-  background: var(--sun-pale);
 }
 
 /* ---------- Читання ---------- */
@@ -397,102 +415,162 @@
 
 .syllable-split {
   display: flex;
-  gap: clamp(18px, 3vw, 34px);
 }
 
-.syllable-split__part {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  animation: pop-in 0.35s ease both;
-}
-
-/* Склад, який можна торкнути й почути голос дорослого. */
-.syllable-split__part--say,
-.sound-split__letter--say {
-  font: inherit;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform 0.12s ease;
-}
-
-.syllable-split__part--say:active,
-.sound-split__letter--say:active {
-  transform: scale(0.94);
-}
-
-.syllable-split__part--say {
-  color: inherit;
-}
-
-.sound-split__letter--say {
-  font-size: clamp(4.4rem, 11vw, 7rem);
-  font-weight: 800;
-  line-height: 1;
-}
-
-.syllable-split__arc {
-  width: 100%;
-  min-width: 60px;
-  height: 18px;
-  border: 4px solid var(--fox);
-  border-top: none;
-  border-radius: 0 0 60px 60px;
-}
-
-.sound-split {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-}
-
-.sound-split__part {
+/*
+ * Склад на дужці. Букви стоять щільно на одній плашці, а кулька біжить по дужці
+ * від першої букви до останньої, поки склад світиться: читаємо разом, одним звуком.
+ * Склади слова біжать по черзі (--i), торкнутий склад - одразу.
+ */
+.syl {
+  --arc-h: 22px;
+  --arc-w: 6px;
+  --ball: 18px;
+  --delay: calc(var(--i, 0) * 1.25s + 0.45s);
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 0 clamp(18px, 3vw, 34px);
-  animation: pop-in 0.35s ease both;
-}
-
-.sound-split__letter {
-  font-size: clamp(4.4rem, 11vw, 7rem);
-  font-weight: 800;
-  line-height: 1;
-}
-
-.sound-split__say {
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: var(--ink-soft);
+  padding: 6px 10px 2px;
+  border: none;
+  border-radius: 20px;
   background: var(--sun-pale);
-  padding: 2px 10px;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  animation:
+    pop-in 0.35s ease both,
+    syl-glow 1.1s ease var(--delay) both;
+}
+
+.syl--big {
+  --arc-h: 30px;
+  --arc-w: 8px;
+  --ball: 24px;
+  padding: 10px 26px 4px;
+  border-radius: 28px;
+}
+
+.syl--replay {
+  --delay: 0s;
+}
+
+.syl:active {
+  transform: scale(0.96);
+}
+
+.syl__arc {
+  position: relative;
+  width: calc(100% - 6px);
+  min-width: 56px;
+  height: var(--arc-h);
+  border: var(--arc-w) solid var(--fox);
+  border-top: none;
+  border-radius: 0 0 50% 50% / 0 0 100% 100%;
+}
+
+/* Дорожка кульки - середина лінії дужки; кулька їде по ній зліва направо. */
+.syl__track {
+  position: absolute;
+  inset: 0 calc(var(--arc-w) / -2) calc(var(--arc-w) / -2);
+}
+
+.syl__ball {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--ball);
+  height: var(--ball);
+  margin: calc(var(--ball) / -2) 0 0 calc(var(--ball) / -2);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff6d6 0 18%, var(--sun) 45%, var(--fox) 100%);
+  box-shadow: 0 0 0 3px #fff, 0 4px 10px -2px rgba(236, 127, 60, 0.7);
+  opacity: 0;
+  animation:
+    syl-ball-x 1.1s linear var(--delay) both,
+    syl-ball-y 1.1s linear var(--delay) both;
+}
+
+@keyframes syl-ball-x {
+  0% {
+    left: 0;
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  92% {
+    opacity: 1;
+  }
+  100% {
+    left: 100%;
+    opacity: 0;
+  }
+}
+
+/* Половина еліпса: y = h·√(1 − (1 − 2x)²). */
+@keyframes syl-ball-y {
+  0% {
+    top: 0;
+  }
+  15% {
+    top: calc(100% * 0.71);
+  }
+  30% {
+    top: calc(100% * 0.92);
+  }
+  50% {
+    top: 100%;
+  }
+  70% {
+    top: calc(100% * 0.92);
+  }
+  85% {
+    top: calc(100% * 0.71);
+  }
+  100% {
+    top: 0;
+  }
+}
+
+@keyframes syl-glow {
+  0%,
+  100% {
+    background: var(--sun-pale);
+    box-shadow: none;
+  }
+  20%,
+  80% {
+    background: #ffe6a3;
+    box-shadow: 0 0 0 3px var(--sun);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .syl,
+  .syl__ball {
+    animation: none;
+  }
+}
+
+/* Склад окремо: на дужці, а під ним - як його тягнути («л-л-ла»). */
+.syl-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.syl-hint__glide {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  background: var(--fox-pale);
+  padding: 4px 16px;
   border-radius: 999px;
-}
-
-.sound-split__arrow {
-  position: absolute;
-  right: -14px;
-  top: 38%;
-  width: 28px;
-  height: 4px;
-  background: var(--fox);
-  border-radius: 2px;
-}
-
-.sound-split__arrow::after {
-  content: '';
-  position: absolute;
-  right: -2px;
-  top: -6px;
-  border: 8px solid transparent;
-  border-left: 10px solid var(--fox);
-  border-right: none;
 }
 
 .word-reveal {
@@ -707,8 +785,5 @@
 @media (max-width: 560px) {
   .match-grid--8 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .sound-split__part {
-    padding: 0 14px;
   }
 }

@@ -15,6 +15,18 @@ export function stretch(letter: string): string {
   return SHORT_SOUNDS.includes(l) ? l : `${l}-${l}-${l}`;
 }
 
+/**
+ * Як прочитати склад злито, без пауз між звуками: «л-л-ла», «а-а-ал».
+ * Короткий звук не протягнеш, тож одразу переходимо в голосну і тягнемо її: «ко-о-о».
+ */
+export function glide(syllable: string): string {
+  const [first, ...rest] = [...syllable.toLocaleLowerCase('uk-UA')];
+  if (!rest.length) return stretch(first);
+  if (!SHORT_SOUNDS.includes(first)) return `${stretch(first)}${rest.join('')}`;
+  const [next, ...tail] = rest;
+  return `${first}${next}-${next}-${next}${tail.join('')}`;
+}
+
 export function plural(n: number, one: string, few: string, many: string): string {
   const m10 = n % 10;
   const m100 = n % 100;

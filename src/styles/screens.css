@@ -172,13 +172,18 @@
 }
 
 .map-day__missions {
+  --mission: 46px;
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 6px;
+  /* Не більше двох місій у рядку: третя стає під ними, і сусідні дні не наїжджають одне на одного. */
+  max-width: calc(var(--mission) * 2 + 6px);
 }
 
 .map-mission {
-  width: 46px;
-  height: 46px;
+  width: var(--mission);
+  height: var(--mission);
   border-radius: 50% 6px 50% 6px;
   border: none;
   display: grid;
@@ -1114,7 +1119,7 @@
   }
 
   .choice-tile,
-  .blend__tile {
+  .slide__tile {
     width: clamp(96px, 18vh, 150px);
   }
 

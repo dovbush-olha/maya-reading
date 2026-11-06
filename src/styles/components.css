@@ -210,6 +210,8 @@
 .reading-text {
   line-height: 1;
   letter-spacing: 0.04em;
+  /* Слова фрази стоять далеко одне від одного: «Мама   мила». */
+  word-spacing: 0.6em;
 }
 
 .reading-text--syllable {

@@ -8,16 +8,23 @@ import type { WordEntry } from './types';
  * `clear` - картинка однозначно називає слово (можна просити скласти слово за картинкою).
  */
 const LIST: WordEntry[] = [
-  // Л + голосні
+  // Л + голосні. Слова без подвоєних букв - найлегші: кожен склад з двох звуків.
   { text: 'алло', split: 'ал-ло', picture: '📞', clear: true },
   { text: 'Алла', split: 'Ал-ла', picture: '👩', note: 'Алла - ім’я.' },
   { text: 'Лола', split: 'Ло-ла', picture: '👧', note: 'Лола - ім’я.' },
   { text: 'Елла', split: 'Ел-ла', picture: '👱‍♀️', note: 'Елла - ім’я.' },
   { text: 'Олі', split: 'О-лі', picture: '👧' },
+  { text: 'Лілі', split: 'Лі-лі', picture: '🧒', note: 'Лілі - так кажемо про Лілю: «дай Лілі».' },
+  { text: 'Улі', split: 'У-лі', picture: '👩‍🦰', note: 'Улі - так кажемо про Улю: «дай Улі».' },
+  { text: 'лила', split: 'ли-ла', picture: '🫗', note: 'Лила - від «лити»: вона лила воду.' },
+  { text: 'лили', split: 'ли-ли', picture: '💦', note: 'Лили - від «лити»: вони лили воду.', pickable: false },
+  { text: 'але', split: 'а-ле', picture: '🤔', note: 'Але - як у «хочу, але не можу».', pickable: false },
   { text: 'у Олі', split: 'у О-лі', picture: '🎀', note: 'У Олі (є бантик).', pickable: false },
   { text: 'у Лоли', split: 'у Ло-ли', picture: '🎈', note: 'У Лоли (є кулька).', pickable: false },
   { text: 'у Алли', split: 'у Ал-ли', picture: '💐', note: 'У Алли (є квіти).', pickable: false },
   { text: 'у Елли', split: 'у Ел-ли', picture: '👒', note: 'У Елли (є капелюшок).', pickable: false },
+  { text: 'у Лілі', split: 'у Лі-лі', picture: '🧸', note: 'У Лілі (є ведмедик).', pickable: false },
+  { text: 'Лола лила', split: 'Ло-ла ли-ла', picture: '🫗' },
 
   // М окремо
   { text: 'мама', split: 'ма-ма', picture: '👩‍👧', clear: true },
@@ -25,13 +32,14 @@ const LIST: WordEntry[] = [
   { text: 'мамі', split: 'ма-мі', picture: '💝', note: 'Подарунок мамі.', pickable: false },
   { text: 'ми', split: 'ми', picture: '👫' },
   { text: 'Емма', split: 'Ем-ма', picture: '👧🏼', note: 'Емма - ім’я.' },
-  { text: 'у мами', split: 'у ма-ми', picture: '👜', note: 'У мами (є сумочка).', pickable: false },
+  { text: 'у мами', split: 'у ма-ми', picture: '👛', note: 'У мами (є гаманець).', pickable: false },
 
   // М + Л
   { text: 'мала', split: 'ма-ла', picture: '🐣', pickable: false },
   { text: 'малі', split: 'ма-лі', picture: '🐥🐥', pickable: false },
   { text: 'мале', split: 'ма-ле', picture: '🐁', pickable: false },
   { text: 'мало', split: 'ма-ло', picture: '🤏' },
+  { text: 'мила', split: 'ми-ла', picture: '🧽', note: 'Мила - від «мити»: мама мила посуд.', pickable: false },
   { text: 'мило', split: 'ми-ло', picture: '🧼', clear: true },
   { text: 'Міла', split: 'Мі-ла', picture: '👧🏻', note: 'Міла - ім’я.' },
   { text: 'лама', split: 'ла-ма', picture: '🦙', clear: true },
@@ -48,7 +56,9 @@ const LIST: WordEntry[] = [
   { text: 'ліс', split: 'ліс', picture: '🌲', clear: true },
   { text: 'лиса', split: 'ли-са', picture: '🦊', note: 'Лиса - лисиця.' },
   { text: 'сила', split: 'си-ла', picture: '💪' },
-  { text: 'сума', split: 'су-ма', picture: '👜', note: 'Сума - сумка.' },
+  { text: 'сама', split: 'са-ма', picture: '🙋‍♀️', note: 'Сама - без допомоги.' },
+  { text: 'масло', split: 'мас-ло', picture: '🧈', clear: true },
+  { text: 'ліси', split: 'лі-си', picture: '🌲🌲', pickable: false },
   { text: 'Міла сама', split: 'Мі-ла са-ма', picture: '🙋‍♀️' },
   { text: 'Лис у лісі', split: 'Лис у лі-сі', picture: '🌳' },
   { text: 'Оса мала', split: 'О-са ма-ла', picture: '🐝' },
@@ -60,15 +70,23 @@ const LIST: WordEntry[] = [
   { text: 'Ніна', split: 'Ні-на', picture: '👧🏽', note: 'Ніна - ім’я.' },
   { text: 'лимон', split: 'ли-мон', picture: '🍋', clear: true },
   { text: 'сани', split: 'са-ни', picture: '🛷', clear: true },
+  { text: 'ананас', split: 'а-на-нас', picture: '🍍', clear: true },
+  { text: 'налила', split: 'на-ли-ла', picture: '🫗', note: 'Налила - від «налити»: налила соку.', pickable: false },
   { text: 'Олена', split: 'О-ле-на', picture: '👩🏼', note: 'Олена - ім’я.' },
   { text: 'Ніна мала', split: 'Ні-на ма-ла', picture: '👶' },
   { text: 'На сіні лис', split: 'На сі-ні лис', picture: '🦊' },
   { text: 'У Ніни лимон', split: 'У Ні-ни ли-мон', picture: '🍋' },
+  { text: 'Ніна налила', split: 'Ні-на на-ли-ла', picture: '🫗', pickable: false },
 
   // + К
   { text: 'сік', split: 'сік', picture: '🧃', clear: true },
   { text: 'коло', split: 'ко-ло', picture: '⭕', clear: true },
   { text: 'кіно', split: 'кі-но', picture: '🎬' },
+  { text: 'сумка', split: 'сум-ка', picture: '👜', clear: true },
+  { text: 'маска', split: 'мас-ка', picture: '🎭', clear: true },
+  { text: 'кулак', split: 'ку-лак', picture: '✊', clear: true },
+  { text: 'лук', split: 'лук', picture: '🏹', clear: true, note: 'Лук - щоб стріляти стрілами.' },
+  { text: 'кекс', split: 'кекс', picture: '🧁', clear: true },
   { text: 'миска', split: 'мис-ка', picture: '🥣', clear: true },
   { text: 'молоко', split: 'мо-ло-ко', picture: '🥛', clear: true },
   { text: 'сокіл', split: 'со-кіл', picture: '🦅', clear: true },
@@ -78,6 +96,7 @@ const LIST: WordEntry[] = [
   { text: 'Сокіл у лісі', split: 'Со-кіл у лі-сі', picture: '🦅' },
   { text: 'Молоко Мілі', split: 'Мо-ло-ко Мі-лі', picture: '🥛' },
   { text: 'У Ніни носок', split: 'У Ні-ни но-сок', picture: '🧦' },
+  { text: 'У мами сумка', split: 'У ма-ми сум-ка', picture: '👜' },
 
   // Для вільної практики, коли дорослий відкриє інші букви
   { text: 'тато', split: 'та-то', picture: '👨', clear: true },

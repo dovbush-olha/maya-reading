@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { NOT_YET_STUDIED, isReadableWith, type LetterId } from '../content/alphabet';
 import type { Exercise } from '../content/types';
 import { validateExercise } from '../content/validate';
-import { WEEK_1_MISSIONS } from '../content/week1';
+import { WEEK_1, WEEK_1_MISSIONS } from '../content/week1';
 import { adviseNextLetter, missionAvailability, recommend } from './availability';
 import { buildPracticeMission, makeRng, warmUp } from './generate';
 import { adaptForSolo, canPickPicture, closeness, preferRecordedVoice } from './solo';
@@ -86,7 +86,7 @@ describe('доступність місій', () => {
     if (r.kind === 'mission') expect(r.mission.id).toBe('w1d1m1');
   });
 
-  const FIRST_THREE_DAYS = ['w1d1m1', 'w1d1m2', 'w1d2m1', 'w1d2m2', 'w1d3m1', 'w1d3m2'];
+  const FIRST_THREE_DAYS = WEEK_1.slice(0, 3).flatMap((d) => d.missions.map((m) => m.id));
 
   it('три дні з Л доступні одразу, а М відкривається сама після третього дня', () => {
     let s = createInitialState(TODAY);
@@ -122,13 +122,23 @@ describe('доступність місій', () => {
     expect(recommend(loaded)).toMatchObject({ kind: 'mission', mission: { id: 'w1d4m1' } });
   });
 
+  it('прогрес до появи нових місій веде в нові місії, не ховаючи вже відкритих букв', () => {
+    let s = createInitialState(TODAY);
+    // Так виглядав прогрес, коли в дні було по дві місії.
+    for (const id of ['w1d1m1', 'w1d1m2', 'w1d2m1', 'w1d2m2', 'w1d3m1', 'w1d3m2', 'w1d4m1', 'w1d4m2']) s = complete(s, id);
+    const loaded = normalizeState(JSON.parse(JSON.stringify({ ...s, unlocked: [...s.unlocked, 'М'] })), TODAY);
+    expect(loaded.unlocked).toContain('М');
+    expect(recommend(loaded)).toMatchObject({ kind: 'mission', mission: { id: 'w1d2m3' } });
+    expect(missionAvailability(loaded, WEEK_1_MISSIONS.find((m) => m.id === 'w1d4m2')!)).toBe('done');
+  });
+
   it('букву, яку сховав дорослий, гра сама вже не відкриває', () => {
     let s = createInitialState(TODAY);
     for (const id of FIRST_THREE_DAYS) s = complete(s, id);
     s = lockLetter(s, 'М');
     const day4 = WEEK_1_MISSIONS.find((m) => m.id === 'w1d4m1')!;
     expect(missionAvailability(s, day4)).toBe('needs-letters');
-    s = complete(s, 'w1d3m2');
+    s = complete(s, FIRST_THREE_DAYS.at(-1)!);
     s = normalizeState(JSON.parse(JSON.stringify(s)), TODAY);
     expect(s.unlocked).not.toContain('М');
     expect(recommend(s)).toMatchObject({ kind: 'practice', reason: 'needs-letters', letters: ['М'] });

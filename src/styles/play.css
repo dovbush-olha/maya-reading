@@ -352,12 +352,14 @@
 .syllable-split {
   flex-wrap: wrap;
   justify-content: center;
-  row-gap: 16px;
+  row-gap: 18px;
+  /* Між словами фрази - широкий проміжок, щоб слова не зливалися. */
+  column-gap: clamp(40px, 9vw, 72px);
 }
 
 .syllable-split__word {
   display: flex;
-  gap: clamp(6px, 1.4vw, 14px);
+  gap: 6px;
 }
 
 .reading-text--split {
@@ -557,7 +559,7 @@
     font-size: 1.5rem;
   }
 
-  /* Кожен день - окрема клітинка: камінець і дві місії під ним, без наїзду на сусідів. */
+  /* Кожен день - окрема клітинка: камінець і місії під ним, без наїзду на сусідів. */
   .map__days {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     column-gap: 8px;
@@ -570,12 +572,10 @@
   }
 
   .map-day__missions {
-    gap: 6px;
+    --mission: clamp(34px, 10.5vw, 42px);
   }
 
   .map-mission {
-    width: clamp(34px, 10.5vw, 42px);
-    height: clamp(34px, 10.5vw, 42px);
     font-size: 1.05rem;
   }
 
@@ -668,12 +668,32 @@
     width: clamp(84px, 27vw, 120px);
   }
 
-  .blend__tile {
-    width: clamp(92px, 30vw, 124px);
+  .slide {
+    --ball: 30px;
   }
 
-  .blend__bridge {
-    width: 44px;
+  .slide__tile {
+    width: clamp(84px, 26vw, 110px);
+  }
+
+  .syl {
+    --arc-h: 16px;
+    --arc-w: 5px;
+    --ball: 15px;
+    padding: 4px 6px 2px;
+    border-radius: 16px;
+  }
+
+  .syl--big {
+    --arc-h: 24px;
+    --arc-w: 7px;
+    --ball: 20px;
+    padding: 8px 20px 4px;
+    border-radius: 24px;
+  }
+
+  .syl__arc {
+    min-width: 40px;
   }
 
   .reading-text--syllable {
